@@ -19,4 +19,4 @@ RUN ./build_avida
 
 FROM ubuntu:20.04
 WORKDIR /avida/
-COPY --from=avida /gitlab.com/fortunalab/avida/cbuild/work/ .
+COPY --from=avida-build /gitlab.com/fortunalab/avida/cbuild/work/ .
