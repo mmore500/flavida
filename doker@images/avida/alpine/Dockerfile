@@ -1,7 +1,8 @@
-FROM ubuntu:20.04 as avida-build
+FROM ubuntu:20.04 as avida-builder
 ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /gitlab.com/fortunalab/
-RUN apt-get update  && apt-get install -y \
+RUN apt-get update  && apt-get -y --no-install-recommends install \
+    ca-certificates \
     gcc-9 \
     g++-9 \
     cmake=3.16.3-1ubuntu1 \
@@ -13,10 +14,13 @@ RUN apt-get update  && apt-get install -y \
 && git clone https://gitlab.com/fortunalab/avida.git
 WORKDIR /gitlab.com/fortunalab/avida
 RUN git submodule foreach git fetch
-RUN git submodule update
-RUN git submodule init
+RUN git submodule update --init --recursive
 RUN ./build_avida
 
-FROM ubuntu:20.04
+FROM alpine:3.15.4
+RUN set -x && \
+  apk add --no-cache --update \
+    libstdc++ \
+    gcompat
 WORKDIR /avida/
-COPY --from=avida-build /gitlab.com/fortunalab/avida/cbuild/work/ .
+COPY --from=avida-builder /gitlab.com/fortunalab/avida/cbuild/work/ .
