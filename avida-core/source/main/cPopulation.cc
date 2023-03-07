@@ -7164,6 +7164,8 @@ void cPopulation::InjectParasite(const cString& label, const InstructionSequence
   
   if (target_organism->ParasiteInfectHost(parasite)) {
     Systematics::Manager::Of(m_world->GetNewWorld())->ClassifyNewUnit(parasite);
+    // Parasites injected at the beginning of the experiment sterilize their hosts, if that option is set
+    if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
   }
 }
 

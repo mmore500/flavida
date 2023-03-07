@@ -284,6 +284,11 @@ bool cHardwareBase::Divide_CheckViable(cAvidaContext& ctx, const int parent_size
     }    
   }
   
+  // Don't let this organism have this or any more children because its has been sterilized by a parasite
+  if(!phenotype.IsFertile()) {
+    return false;
+  }
+  
   return true; // (divide succeeds!)
 #undef ORG_FAULT
 }
