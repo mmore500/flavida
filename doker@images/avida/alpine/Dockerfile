@@ -5,9 +5,9 @@ RUN apt-get update  && apt-get -y --no-install-recommends install \
     ca-certificates \
     gcc-9 \
     g++-9 \
-    cmake=3.16.3-1ubuntu1 \
-    make=4.2.1-1.2 \
-    git=1:2.25.1-1ubuntu3.5 \
+    cmake \
+    make \
+    git \
     curl \
 && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100 \
 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 100 \ 
