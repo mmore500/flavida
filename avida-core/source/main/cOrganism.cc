@@ -821,13 +821,18 @@ bool cOrganism::Divide_CheckViable(cAvidaContext& ctx)
     }
   }
   
-  if (required_task != -1 && m_phenotype.GetCurTaskCount()[required_task] == 0) { 
-    if (immunity_task ==-1 || m_phenotype.GetCurTaskCount()[immunity_task] == 0) {
-      Fault(FAULT_LOC_DIVIDE, FAULT_TYPE_ERROR,
-            cStringUtil::Stringf("Lacks required task (%d)", required_task));
-      return false; //  (divide fails)
-    } 
+  int mask = 1;
+  for (int bit_pos = 0; bit_pos <= 8; bit_pos++) {
+    int required_task_bit = required_task & (mask << bit_pos);
+    if (required_task_bit != 0 && m_phenotype.GetCurTaskCount()[bit_pos] == 0) {
+      if (immunity_task == -1 || m_phenotype.GetCurTaskCount()[immunity_task] == 0) {
+        Fault(FAULT_LOC_DIVIDE, FAULT_TYPE_ERROR,
+              cStringUtil::Stringf("Lacks required task (%d)", required_task));
+        return false; // (divide fails)
+      }
+    }
   }
+
   
   const int required_reaction = m_world->GetConfig().REQUIRED_REACTION.Get();
   const int immunity_reaction = m_world->GetConfig().IMMUNITY_REACTION.Get();
