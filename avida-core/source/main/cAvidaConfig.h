@@ -395,7 +395,7 @@ public:
   CONFIG_ADD_VAR(MAX_GENOME_SIZE, int, 0, "Maximum number of instructions allowed in a genome. 0 = OFF");
   CONFIG_ADD_VAR(MIN_CYCLES, int, 0, "Min number of CPU cycles (age) required before reproduction.");
   CONFIG_ADD_VAR(REQUIRE_ALLOCATE, int, 1, "(Original CPU Only) Require allocate before divide?");
-  CONFIG_ADD_VAR(REQUIRED_TASK, int, -1, "Task ID required for successful divide");
+  CONFIG_ADD_VAR(REQUIRED_TASK, int, 0, "One of more tasks must be performed for successful divide (no tasks are required by default). Tasks must be provided in decimal notation following the order of the tasks specified in the environment.cfg file (e.g., the decimal notation of the binary string 100000010 corresponding to the second and last tasks specified in the default environment.cfg file is 258).");
   CONFIG_ADD_VAR(IMMUNITY_TASK, int, -1, "Task providing immunity from the required task");
   CONFIG_ADD_VAR(REQUIRED_REACTION, int, -1, "Reaction ID required for successful divide");
   CONFIG_ADD_VAR(IMMUNITY_REACTION, int, -1, "Reaction ID that provides immunity for successful divide");
