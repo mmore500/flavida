@@ -215,14 +215,20 @@ private:
   void CommandFilter(cString cur_string);
   void FindGenotype(cString cur_string);
   void FindOrganism(cString cur_string);
-  void FindLineage(cString cur_string);
+  void FindLineage(cString cur_string, cString filterBy);
+  void FindLineageGenuine(cString cur_string);
+  void FindLineageHost(cString cur_string);
+  void FindLineageParasite(cString cur_string);
   void FindSexLineage(cString cur_string);
   void FindClade(cString cur_string);
   void FindLastCommonAncestor(cString cur_string);
   void SampleOrganisms(cString cur_string);
   void SampleGenotypes(cString cur_string);
   void KeepTopGenotypes(cString cur_string);
-  void TruncateLineage(cString cur_string);
+  void TruncateLineage(cString cur_string, cString lieageType);
+  void TruncateLineageGenuine(cString cur_string);
+  void TruncateLineageOrganism(cString cur_string);
+  void TruncateLineageParasite(cString cur_string);
   void SampleOffspring(cString cur_string);
   
   // Direct Output Commands...
