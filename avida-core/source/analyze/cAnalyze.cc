@@ -829,22 +829,28 @@ void cAnalyze::LoadFile(cString cur_string)
   
   for (int line_id = 0; line_id < input_file.GetNumLines(); line_id++) {
     cString cur_line = input_file.GetLine(line_id);
-    
+
     cAnalyzeGenotype* genotype = new cAnalyzeGenotype(m_world, default_genome);
     
     output_it.Reset();
     tDataEntryCommand<cAnalyzeGenotype>* data_command = NULL;
+    cString namePrefix = "";
     while ((data_command = output_it.Next()) != NULL) {
-      data_command->SetValue(genotype, cur_line.PopWord());
+      cString rvData = cur_line.PopWord();
+      if(rvData == "horz:int")
+        namePrefix = "par-%d";
+      else if(rvData == "div:int")
+        namePrefix = "org-%d";
+      data_command->SetValue(genotype, rvData);
     }
     
     // Give this genotype a name.  Base it on the ID if possible.
     if (id_inc == false) {
-      cString name = cStringUtil::Stringf("org-%d", load_count++);
+      cString name = cStringUtil::Stringf(namePrefix, load_count++);
       genotype->SetName(name);
     }
     else {
-      cString name = cStringUtil::Stringf("org-%d", genotype->GetID());
+      cString name = cStringUtil::Stringf(namePrefix, genotype->GetID());
       genotype->SetName(name);
     }
     
@@ -1048,7 +1054,24 @@ void cAnalyze::FindOrganism(cString cur_string)
   batch[cur_batch].SetAligned(false);
 }
 
-void cAnalyze::FindLineage(cString cur_string)
+void cAnalyze::FindLineageGenuine(cString cur_string)
+{
+  cAnalyze::FindLineage(cur_string, "");
+}
+
+void cAnalyze::FindLineageHost(cString cur_string)
+{
+  cout << "Finding lineage for the host"  << endl;
+  cAnalyze::FindLineage(cur_string, "org");
+}
+
+void cAnalyze::FindLineageParasite(cString cur_string)
+{
+  cout << "Finding lineage for the parasite"  << endl;
+  cAnalyze::FindLineage(cur_string, "par");
+}
+
+void cAnalyze::FindLineage(cString cur_string, cString filterBy)
 {
   cString lin_type = "num_cpus";
   if (cur_string.CountNumWords() > 0) lin_type = cur_string.PopWord();
@@ -1058,7 +1081,17 @@ void cAnalyze::FindLineage(cString cur_string)
     << " to " << lin_type << " lineage " << endl;
   } else cout << "Performing lineage scan..." << endl;
   
-  
+  // Filter batch
+  if(filterBy != "") {
+    cAnalyzeGenotype * genotype = NULL;
+    tListIterator<cAnalyzeGenotype> filter_it(batch[cur_batch].List());
+    while ((genotype = filter_it.Next()) != NULL) {
+      if (!genotype->GetName().IsSubstring(filterBy, 0)) {
+        batch[cur_batch].List().Remove(genotype);
+      }
+    }    
+  }
+
   // Determine by lin_type which genotype we are tracking...
   cAnalyzeGenotype * found_gen = PopGenotype(lin_type, cur_batch);
   
@@ -1563,7 +1596,22 @@ void cAnalyze::KeepTopGenotypes(cString cur_string)
   batch[cur_batch].SetAligned(false);
 }
 
-void cAnalyze::TruncateLineage(cString cur_string)
+void cAnalyze::TruncateLineageGenuine(cString cur_string)
+{
+  cAnalyze::TruncateLineage(cur_string, "");
+}
+
+void cAnalyze::TruncateLineageOrganism(cString cur_string)
+{
+  cAnalyze::TruncateLineage(cur_string, "org");
+}
+
+void cAnalyze::TruncateLineageParasite(cString cur_string)
+{
+  cAnalyze::TruncateLineage(cur_string, "par");
+}
+
+void cAnalyze::TruncateLineage(cString cur_string, cString filterBy)
 {
   cString type("task");
   int arg_i = -1;
@@ -1575,7 +1623,7 @@ void cAnalyze::TruncateLineage(cString cur_string)
   }
   cString lin_type("num_cpus");
   if (cur_string.GetSize()) lin_type = cur_string.PopWord();
-  FindLineage(lin_type);
+  FindLineage(lin_type, filterBy);
   BatchRecalculate("");
   
   if (type == "task") {
@@ -5071,7 +5119,7 @@ genotype_vector cAnalyze::LoadDetailFileAsVector(cString cur_string)
       genotype->SetName(name);
     }
     else {
-      cString name = cStringUtil::Stringf("org-%d", genotype->GetID());
+      cString name = cStringUtil::Stringf("par-%d", genotype->GetID());
       genotype->SetName(name);
     }
     
@@ -11050,7 +11098,10 @@ void cAnalyze::ProcessCommands(tList<cAnalyzeCommand>& clist)
     cString command = cur_command->GetCommand();
     cString args = cur_command->GetArgs();
     PreProcessArgs(args);
-    
+    if (command == "FIND_LINEAGE") {
+      int aaa;
+      aaa = 0;
+    }
     cAnalyzeCommandDefBase* command_fun = FindAnalyzeCommandDef(command);
     
     cUserFeedback feedback;
@@ -11211,15 +11262,19 @@ void cAnalyze::SetupCommandDefLibrary()
   AddLibraryDef("FILTER", &cAnalyze::CommandFilter);
   AddLibraryDef("FIND_GENOTYPE", &cAnalyze::FindGenotype);
   AddLibraryDef("FIND_ORGANISM", &cAnalyze::FindOrganism);
-  AddLibraryDef("FIND_LINEAGE", &cAnalyze::FindLineage);
+  AddLibraryDef("FIND_LINEAGE", &cAnalyze::FindLineageGenuine);
+  AddLibraryDef("FIND_LINEAGE_HOST", &cAnalyze::FindLineageHost);
+  AddLibraryDef("FIND_LINEAGE_PARASITE", &cAnalyze::FindLineageParasite);
   AddLibraryDef("FIND_SEX_LINEAGE", &cAnalyze::FindSexLineage);
   AddLibraryDef("FIND_CLADE", &cAnalyze::FindClade);
   AddLibraryDef("FIND_LAST_COMMON_ANCESTOR", &cAnalyze::FindLastCommonAncestor);  
   AddLibraryDef("SAMPLE_ORGANISMS", &cAnalyze::SampleOrganisms);
   AddLibraryDef("SAMPLE_GENOTYPES", &cAnalyze::SampleGenotypes);
   AddLibraryDef("KEEP_TOP", &cAnalyze::KeepTopGenotypes);
-  AddLibraryDef("TRUNCATELINEAGE", &cAnalyze::TruncateLineage); // Depricate!
-  AddLibraryDef("TRUNCATE_LINEAGE", &cAnalyze::TruncateLineage);
+  AddLibraryDef("TRUNCATELINEAGE", &cAnalyze::TruncateLineageGenuine); // Depricate!
+  AddLibraryDef("TRUNCATE_LINEAGE", &cAnalyze::TruncateLineageGenuine);
+  AddLibraryDef("TRUNCATE_LINEAGE_ORGANISM", &cAnalyze::TruncateLineageOrganism);
+  AddLibraryDef("TRUNCATE_LINEAGE_PARASITE", &cAnalyze::TruncateLineageParasite);
   AddLibraryDef("SAMPLE_OFFSPRING", &cAnalyze::SampleOffspring);
 
   // Direct output commands...
