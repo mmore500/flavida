@@ -839,7 +839,7 @@ void cAnalyze::LoadFile(cString cur_string)
       cString rvData = cur_line.PopWord();
       if(rvData == "horz:int")
         namePrefix = "par-%d";
-      else if(rvData == "div:int")
+      else if(rvData == "div:int" || rvData == "div:ext")
         namePrefix = "org-%d";
       data_command->SetValue(genotype, rvData);
     }
