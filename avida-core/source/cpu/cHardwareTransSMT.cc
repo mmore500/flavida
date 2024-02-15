@@ -215,6 +215,7 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
   m_organism->SetRunning(true);
 
   cPhenotype &phenotype = m_organism->GetPhenotype();
+
   phenotype.IncTimeUsed();
 
   const int num_inst_exec = (m_world->GetConfig().THREAD_SLICING_METHOD.Get() == 1) ? m_threads.GetSize() : 1;
@@ -301,6 +302,17 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
         {
           SingleProcess_PayPostResCosts(ctx, cur_inst);
           SingleProcess_SetPostCPUCosts(ctx, cur_inst, m_cur_thread);
+        }
+
+        // Check if the instruction has been executed by a parasite
+        if(m_cur_thread > 0){
+          if(m_threads[m_cur_thread].owner->UnitSource().transmission_type == Systematics::HORIZONTAL) {
+            // Get access to the phenotype of the parasite
+            Apto::SmartPtr<cParasite, Apto::InternalRCObject> thisParasite;
+            thisParasite.DynamicCastFrom(m_threads[m_cur_thread].owner);
+            // Increments time used by the parasite, it's value will be taken into account for gestation time calculations
+            thisParasite->GetPhenotype().IncTimeUsed();
+          }
         }
 
       // Some instruction (such as jump) may turn advance_ip off.  Ususally

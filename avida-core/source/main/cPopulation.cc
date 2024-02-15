@@ -1192,7 +1192,7 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   // Get parent parasite
   Apto::SmartPtr<cParasite, Apto::InternalRCObject> parent_parasite;
   parent_parasite.DynamicCastFrom(parent);
-
+  
   // Do not activate the parasite if the size of its genome is different from that of its parent
   if(m_world->GetConfig().PARASITE_GENOME_SIZE_AS_PARENT.Get() == 1 && parent_parasite != NULL) {
     if (parent_parasite->GetSeqSize() != injected_code.GetSize()) {
@@ -1271,6 +1271,7 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   Apto::SmartPtr<cParasite, Apto::InternalRCObject> parasite(new cParasite(m_world, mg, Apto::StrAs(parent->Properties().Get("generation")), Systematics::Source(Systematics::HORIZONTAL, (const char*)label)));
   //Handle potential virulence evolution if this parasite is comming from a parasite 
   //and virulence is inhereted from the parent (source == 1)
+
   if (parent->UnitSource().transmission_type == Systematics::HORIZONTAL && m_world->GetConfig().VIRULENCE_SOURCE.Get() == 1)
   {
     //mutate virulence
@@ -1310,6 +1311,12 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   Systematics::ConstParentGroupsPtr pgrps(new Systematics::ConstParentGroups(1));
   (*pgrps)[0] = parent->SystematicsGroupMembership();
   parasite->SelfClassify(pgrps);
+
+  // Reset phenotype properties for the parasite that just has born
+  parasite->GetPhenotype().SetupActivateParasite();
+
+  // Do any statistics on gestation time for the parent parasite
+  parent_parasite->HandleGestation();
   
   // Handle post injection actions
   if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
@@ -6310,6 +6317,7 @@ bool cPopulation::SavePopulation(const cString& filename, bool save_historic, bo
       const Apto::Array<Systematics::UnitPtr>& parasites = org->GetParasites();
       for (int p = 0; p < parasites.GetSize(); p++) {
         Systematics::GroupPtr pg = parasites[p]->SystematicsGroup("genotype");
+
         if (pg == NULL) continue;
         
         sGroupInfo* map_entry = NULL;
@@ -6326,7 +6334,6 @@ bool cPopulation::SavePopulation(const cString& filename, bool save_historic, bo
       // Handle the organism itself
       Systematics::GroupPtr genotype = org->SystematicsGroup("genotype");
       if (genotype == NULL) continue;
-      
       int offset = org->GetPhenotype().GetCPUCyclesUsed();
       sGroupInfo* map_entry = NULL;
       if (genotype_map.Get(genotype->ID(), map_entry)) {
@@ -6414,7 +6421,7 @@ bool cPopulation::SavePopulation(const cString& filename, bool save_historic, bo
     cString pforagestr;
     cString pteachstr;
     cString pmeritstr;
-    
+
     cellstr.Set("%d", cells[0].cell_id);
     offsetstr.Set("%d", cells[0].offset);
     lineagestr.Set("%d", cells[0].lineage_label);
@@ -7161,11 +7168,14 @@ void cPopulation::InjectParasite(const cString& label, const InstructionSequence
 
   // set genome sequence size
   parasite->SetSeqSize(injected_code.GetSize());
-  
+
   if (target_organism->ParasiteInfectHost(parasite)) {
     Systematics::Manager::Of(m_world->GetNewWorld())->ClassifyNewUnit(parasite);
     // Parasites injected at the beginning of the experiment sterilize their hosts, if that option is set
     if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
+
+    // Reset phenotype properties for the injected parasite
+    parasite->GetPhenotype().SetupActivateParasite();
   }
 }
 
