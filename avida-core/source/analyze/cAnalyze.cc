@@ -11098,10 +11098,7 @@ void cAnalyze::ProcessCommands(tList<cAnalyzeCommand>& clist)
     cString command = cur_command->GetCommand();
     cString args = cur_command->GetArgs();
     PreProcessArgs(args);
-    if (command == "FIND_LINEAGE") {
-      int aaa;
-      aaa = 0;
-    }
+    
     cAnalyzeCommandDefBase* command_fun = FindAnalyzeCommandDef(command);
     
     cUserFeedback feedback;
