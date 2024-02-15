@@ -1,0 +1,56 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Iniciar",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/avida",
+            "args": [
+                "-set", "RANDOM_SEED", "1",
+                "-set", "WORLD_X", "2",
+                "-set", "WORLD_Y", "1",
+                "-set", "VERBOSITY", "2",
+                "-set", "INFECTION_MECHANISM", "1",
+                "-set", "COPY_MUT_PROB", "0",
+                "-set", "DIVIDE_INS_PROB", "0",
+                "-set", "DIVIDE_DEL_PROB", "0",
+                "-set", "OFFSPRING_SIZE_RANGE", "1",
+                "-set", "MIN_COPIED_LINES", "0",
+                "-set", "MIN_EXE_LINES", "0",
+                "-set", "REQUIRE_EXACT_COPY", "1",
+                "-set", "STERILIZE_UNSTABLE", "1",
+                "-set", "HARDWARE_TYPE", "2",
+                "-set", "BASE_MERIT_METHOD", "0",
+                "-set", "BIRTH_METHOD", "3",
+                "-set", "DEATH_METHOD", "0",
+                "-set", "MAX_CPU_THREADS", "2",
+                "-set", "PARASITE_VIRULENCE", "1",
+                "-set", "PARASITE_NO_COPY_MUT", "1",
+                "-set", "DIV_MUT_PROB", "0",
+                "-set", "INJECT_METHOD", "2",
+                "-set", "PARASITE_GENOME_SIZE_AS_PARENT", "1"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/bin/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Habilitar la impresión con sangría para gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description":  "Establecer tipo de desensamblado en Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

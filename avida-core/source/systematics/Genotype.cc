@@ -33,6 +33,8 @@
 #include "cStringList.h"
 #include "cStringUtil.h"
 
+#include "cParasite.h"
+
 
 static const Apto::BasicString<Apto::ThreadSafe> s_unit_prop_name_last_copied_size("last_copied_size");
 static const Apto::BasicString<Apto::ThreadSafe> s_unit_prop_name_last_executed_size("last_executed_size");
@@ -293,7 +295,29 @@ void Avida::Systematics::Genotype::HandleUnitGestation(UnitPtr u)
   m_copied_size.Add(u->Properties().Get(s_unit_prop_name_last_copied_size));
   m_exe_size.Add(u->Properties().Get(s_unit_prop_name_last_executed_size));
   
-  double last_gestation_time = u->Properties().Get(s_unit_prop_name_last_gestation_time);
+  double last_gestation_time;
+  
+  // If this unit is a parasite, calculate its gestation_time
+  if(u->UnitSource().transmission_type == Systematics::HORIZONTAL) {
+    // Get access to parasite data
+    Apto::SmartPtr<cParasite, Apto::InternalRCObject> thisParasite;
+    thisParasite.DynamicCastFrom(u);
+
+    // Calculate its gestation_time
+    int time_used = thisParasite->GetPhenotype().GetTimeUsed();
+    int gestation_start = thisParasite->GetPhenotype().GetGestationStart();
+
+    // Set last_gestation_time for statiscits
+    last_gestation_time = time_used - gestation_start;
+
+    // Reset phenotype properties for parasite gestation time calculations
+    thisParasite->GetPhenotype().SetupActivateParasite();
+
+  // Otherwise get gestation time from the organisms's unit properties
+  } else {
+    last_gestation_time = u->Properties().Get(s_unit_prop_name_last_gestation_time);
+  }
+
   m_gestation_time.Add(last_gestation_time);
   m_repro_rate.Add(1.0 / last_gestation_time);
   m_merit.Add(u->Properties().Get(s_unit_prop_name_last_metabolic_rate));
@@ -304,7 +328,6 @@ void Avida::Systematics::Genotype::HandleUnitGestation(UnitPtr u)
 //    m_task_counts[i].Add(static_cast<int>(u->Properties().Get(m_mgr->EnvironmentActionTriggerCountIDs()[i])));
 //  }
 }
-
 
 void Avida::Systematics::Genotype::RemoveUnit()
 {
