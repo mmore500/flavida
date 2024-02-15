@@ -1816,6 +1816,9 @@ bool cHardwareTransSMT::Inst_ThreadKill(cAvidaContext &)
 //  into the complement template found in a neighboring organism.
 bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
 {
+  if (m_world->GetConfig().ANALYZE_MODE.Get() > 0) {
+    return Inst_Divide_Erase(ctx);
+  }
   ReadLabel(MAX_MEMSPACE_LABEL);
 
   if (ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
