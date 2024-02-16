@@ -1165,6 +1165,23 @@ int cHardwareTransSMT::calcCopiedSize(const int, const int)
   return copied_size;
 }
 
+Instruction cHardwareTransSMT::GetRandomInst(cAvidaContext &ctx, Systematics::TransmissionType transmission_type) {
+      // Get a random instruction
+      Instruction curr_inst = m_inst_set->GetRandomInst(ctx);
+
+      // Get Inject instruction
+      Instruction f_inst = m_inst_set->GetInst("Inject");
+
+      // Get Divide_Erase instruction
+      Instruction g_inst = m_inst_set->GetInst("Divide-Erase");
+
+      // Get random instruccion until the conditions are met     
+      while((curr_inst == f_inst && transmission_type == Systematics::DIVISION) || (curr_inst == g_inst && transmission_type == Systematics::HORIZONTAL)) {
+        curr_inst = m_inst_set->GetRandomInst(ctx);
+      }
+      return curr_inst;
+}
+
 void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multiplier, cCPUMemory &injected_code)
 {
   m_organism->GetPhenotype().SetDivType(mut_multiplier);
@@ -1178,23 +1195,8 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     for (int i = 0; i < num_mut; i++)
     {
       int site = ctx.GetRandom().GetUInt(injected_code.GetSize());
-      // Get a random instruction
-      Instruction curr_inst = m_inst_set->GetRandomInst(ctx);
 
-      // Get Inject instruction
-      Instruction f_inst = m_inst_set->GetInst("Inject");
-
-      // Get Divide_Erase instruction
-      Instruction g_inst = m_inst_set->GetInst("Divide-Erase");
-
-      // Get organism transmission type
-      Systematics::TransmissionType transmission_type = ThreadGetOwner()->UnitSource().transmission_type;
-
-      // Get random instruccion until the conditions are met     
-      while((curr_inst == f_inst && transmission_type == Systematics::DIVISION) || (curr_inst == g_inst && transmission_type == Systematics::HORIZONTAL)) {
-        curr_inst = m_inst_set->GetRandomInst(ctx);
-      }
-      injected_code[site] = curr_inst;
+      injected_code[site] = GetRandomInst(ctx, ThreadGetOwner()->UnitSource().transmission_type);
     }
   }
 
@@ -1216,7 +1218,7 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     // Actually do the mutations (in reverse sort order)
     for (int i = num_mut - 1; i >= 0; i--)
     {
-      injected_code.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+      injected_code.Insert(mut_sites[i], GetRandomInst(ctx, ThreadGetOwner()->UnitSource().transmission_type));
     }
   }
 
@@ -1251,7 +1253,7 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
       for (int i = 0; i < num_mut; i++)
       {
         int site = ctx.GetRandom().GetUInt(memory.GetSize());
-        memory[site] = m_inst_set->GetRandomInst(ctx);
+        memory[site] = GetRandomInst(ctx, ThreadGetOwner()->UnitSource().transmission_type);
       }
     }
   }
@@ -1279,7 +1281,7 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
       // Actually do the mutations (in reverse sort order)
       for (int i = mut_sites.GetSize() - 1; i >= 0; i--)
       {
-        memory.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+        memory.Insert(mut_sites[i], GetRandomInst(ctx, ThreadGetOwner()->UnitSource().transmission_type));
       }
     }
   }
@@ -1572,7 +1574,7 @@ bool cHardwareTransSMT::Inst_HeadRead(cAvidaContext &ctx)
 
   if (m_organism->TestCopyMut(ctx) && toMutate)
   {
-    read_inst = m_inst_set->GetRandomInst(ctx).GetOp();
+    read_inst = GetRandomInst(ctx, ThreadGetOwner()->UnitSource().transmission_type).GetOp();
   }
   else
   {

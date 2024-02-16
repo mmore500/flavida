@@ -246,6 +246,9 @@ public:
   bool DoCollect(cAvidaContext& ctx, bool env_remove, bool internal_add, bool probabilistic, bool unit);
   bool DoActualCollect(cAvidaContext& ctx, int bin_used, bool env_remove, bool internal_add, bool probabilistic, bool unit);
 
+  // -------- Handle Random Instruction --------
+  Instruction GetRandomInst(cAvidaContext &ctx, Systematics::TransmissionType transmission_type);
+
 private:
   // ---------- Instruction Library -----------
 
