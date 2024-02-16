@@ -57,7 +57,7 @@ private:
   Apto::Array<int> manual_inputs;  //   if so, use these.
   HardwareTracerPtr m_tracer;
   cMutationRates m_mut_rates;
-  Avida::Systematics::TransmissionType m_transmission_type;
+  Avida::Systematics::TransmissionType m_transmission_type; // Transmision type of the organism to be tested
   
   int m_cur_sg;
 
@@ -125,6 +125,7 @@ public:
   
   int GetStateGridID() const { return m_cur_sg; }
 
+  // Transmission type
   void SetTransmissionType(Avida::Systematics::TransmissionType transmision_type) { m_transmission_type = transmision_type; }
   Avida::Systematics::TransmissionType GetTransmissionType() { return m_transmission_type; }
 };

@@ -1816,6 +1816,7 @@ bool cHardwareTransSMT::Inst_ThreadKill(cAvidaContext &)
 //  into the complement template found in a neighboring organism.
 bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
 {
+  // Execute Inst_Divide_Erase for parasites in analyze mode only
   if (m_world->GetConfig().ANALYZE_MODE.Get() > 0 && ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL) {
     return Inst_Divide_Erase(ctx);
   }

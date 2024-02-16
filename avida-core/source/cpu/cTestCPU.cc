@@ -260,6 +260,7 @@ bool cTestCPU::TestGenome_Body(cAvidaContext& ctx, cCPUTestInfo& test_info, cons
   if (test_info.org_array[cur_depth] != NULL) {
     delete test_info.org_array[cur_depth];
   }
+  // Initializes organism with specific transmission type (host or parasite).
   cOrganism* organism = new cOrganism(m_world, ctx, genome, -1, Systematics::Source(test_info.GetTransmissionType(), "", true));
   
   // Copy the test mutation rates

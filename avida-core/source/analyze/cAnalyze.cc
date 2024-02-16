@@ -10357,14 +10357,16 @@ void cAnalyze::BatchRecalculate(cString cur_string)
   while ((genotype = batch_it.Next()) != NULL) {    
 
     if(genotype->GetName().Find("par") != -1) {
+      // The genotype owns to a parasite, set transmission type to HORIZONTAL
       test_info.SetTransmissionType(Systematics::HORIZONTAL);
     } else {
+      // The genotype owns to a host, set transmission type to DIVISION
       test_info.SetTransmissionType(Systematics::DIVISION);
     }
     
     // If the previous genotype was the parent of this one, pass in a pointer
     // to it for improved recalculate (such as distance to parent, etc.)
-     if (last_genotype != NULL && genotype->GetParentID() == last_genotype->GetID()) {
+    if (last_genotype != NULL && genotype->GetParentID() == last_genotype->GetID()) {
       genotype->Recalculate(m_ctx, &test_info, last_genotype);
     } else {
       genotype->Recalculate(m_ctx, &test_info);
