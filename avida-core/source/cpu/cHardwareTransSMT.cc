@@ -1178,7 +1178,23 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     for (int i = 0; i < num_mut; i++)
     {
       int site = ctx.GetRandom().GetUInt(injected_code.GetSize());
-      injected_code[site] = m_inst_set->GetRandomInst(ctx);
+      // Get a random instruction
+      Instruction curr_inst = m_inst_set->GetRandomInst(ctx);
+
+      // Get Inject instruction
+      Instruction f_inst = m_inst_set->GetInst("Inject");
+
+      // Get Divide_Erase instruction
+      Instruction g_inst = m_inst_set->GetInst("Divide-Erase");
+
+      // Get organism transmission type
+      Systematics::TransmissionType transmission_type = ThreadGetOwner()->UnitSource().transmission_type;
+
+      // Get random instruccion until the conditions are met     
+      while((curr_inst == f_inst && transmission_type == Systematics::DIVISION) || (curr_inst == g_inst && transmission_type == Systematics::HORIZONTAL)) {
+        curr_inst = m_inst_set->GetRandomInst(ctx);
+      }
+      injected_code[site] = curr_inst;
     }
   }
 
