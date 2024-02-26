@@ -26,6 +26,7 @@
 #include <iostream>
 
 #include "avida/core/InstructionSequence.h"
+#include "avida/systematics/Types.h"
 
 #include "cString.h"
 #include "cInstLib.h"
@@ -134,6 +135,7 @@ public:
   }
 
   Instruction GetRandomInst(cAvidaContext& ctx) const;
+  Instruction GetRandomInstByTransmissionType(cAvidaContext &ctx, Systematics::TransmissionType transmission_type);
   int GetRandFunctionIndex(cAvidaContext& ctx) const { return m_lib_name_map[ GetRandomInst(ctx).GetOp() ].lib_fun_id; }
 
   int GetSize() const { return m_lib_name_map.GetSize(); }
