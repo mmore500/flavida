@@ -373,7 +373,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
   // Divide Mutations
   if (m_organism->TestDivideMut(ctx) && totalMutations < maxmut) {
     const unsigned int mut_line = ctx.GetRandom().GetUInt(offspring_genome.GetSize());
-    offspring_genome[mut_line] = m_inst_set->GetRandomInst(ctx);
+    offspring_genome[mut_line] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
     totalMutations++;
   }
   
@@ -384,7 +384,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
   {
     if (totalMutations >= maxmut) break;
     const unsigned int mut_line = ctx.GetRandom().GetUInt(offspring_genome.GetSize());
-    offspring_genome[mut_line] = m_inst_set->GetRandomInst(ctx);
+    offspring_genome[mut_line] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
     totalMutations++;
   }
   
@@ -392,7 +392,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
   // Divide Insertions
   if (m_organism->TestDivideIns(ctx) && offspring_genome.GetSize() < max_genome_size && totalMutations < maxmut) {
     const unsigned int mut_line = ctx.GetRandom().GetUInt(offspring_genome.GetSize() + 1);
-    offspring_genome.Insert(mut_line, m_inst_set->GetRandomInst(ctx));
+    offspring_genome.Insert(mut_line, m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
     totalMutations++;
   }
   
@@ -404,7 +404,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
     if (offspring_genome.GetSize() >= max_genome_size) break;
     if (totalMutations >= maxmut) break;
     const unsigned int mut_line = ctx.GetRandom().GetUInt(offspring_genome.GetSize() + 1);
-    offspring_genome.Insert(mut_line, m_inst_set->GetRandomInst(ctx));
+    offspring_genome.Insert(mut_line, m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
     totalMutations++;
   }
   
@@ -443,7 +443,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
     if (num_mut > 0 && totalMutations < maxmut) {
       for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
         int site = ctx.GetRandom().GetUInt(offspring_genome.GetSize());
-        offspring_genome[site] = m_inst_set->GetRandomInst(ctx);
+        offspring_genome[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
         totalMutations++;
       }
     }
@@ -467,7 +467,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
       
       // Actually do the mutations (in reverse sort order)
       for (int i = mut_sites.GetSize() - 1; i >= 0; i--) {
-        offspring_genome.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+        offspring_genome.Insert(mut_sites[i], m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
       }
       
       totalMutations += num_mut;
@@ -519,7 +519,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
     if (num_mut > 0) {
       for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
         int site = ctx.GetRandom().GetUInt(memory.GetSize());
-        memory[site] = m_inst_set->GetRandomInst(ctx);
+        memory[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
         totalMutations++;
       }
     }
@@ -543,7 +543,7 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
       
       // Actually do the mutations (in reverse sort order)
       for (int i = mut_sites.GetSize() - 1; i >= 0; i--) {
-        memory.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+        memory.Insert(mut_sites[i], m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
       }
       
       totalMutations += num_mut;
@@ -653,7 +653,7 @@ void cHardwareBase::doSlipMutation(cAvidaContext& ctx, InstructionSequence& geno
           
           //Random
         case 2:
-          genome[from + i] = m_inst_set->GetRandomInst(ctx);
+          genome[from + i] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
           break;
           
           //Scrambled order
@@ -841,7 +841,7 @@ unsigned cHardwareBase::Divide_DoExactMutations(cAvidaContext& ctx, double mut_m
   // Divide Mutations
   if (totalMutations < maxmut) {
     const unsigned int mut_line = ctx.GetRandom().GetUInt(child_genome.GetSize());
-    child_genome[mut_line] = m_inst_set->GetRandomInst(ctx);
+    child_genome[mut_line] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
     totalMutations++;
   }
   
@@ -852,7 +852,7 @@ unsigned cHardwareBase::Divide_DoExactMutations(cAvidaContext& ctx, double mut_m
     if (num_mut > 0 && totalMutations < maxmut) {
       for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
         int site = ctx.GetRandom().GetUInt(child_genome.GetSize());
-        child_genome[site] = m_inst_set->GetRandomInst(ctx);
+        child_genome[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
         totalMutations++;
         cerr << "Resampling here " << totalMutations << endl;
       }
@@ -1101,7 +1101,7 @@ int cHardwareBase::PointMutate(cAvidaContext& ctx, double override_mut_rate)
 //  
 //  for (int i = 0; i < num_muts; i++) {
 //    const int pos = ctx.GetRandom().GetUInt(memory.GetSize());
-//    memory[pos] = m_inst_set->GetRandomInst(ctx);
+//    memory[pos] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
 //    memory.SetFlagMutated(pos);
 //    memory.SetFlagPointMut(pos);
 //  }
@@ -1116,7 +1116,7 @@ int cHardwareBase::PointMutate(cAvidaContext& ctx, double override_mut_rate)
     if (num_mut > 0) {
       for (int i = 0; i < num_mut; i++) {
         int site = ctx.GetRandom().GetUInt(memory.GetSize());
-        memory[site] = m_inst_set->GetRandomInst(ctx);
+        memory[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
         totalMutations++;
       }
     }
@@ -1140,7 +1140,7 @@ int cHardwareBase::PointMutate(cAvidaContext& ctx, double override_mut_rate)
       
       // Actually do the mutations (in reverse sort order)
       for (int i = mut_sites.GetSize() - 1; i >= 0; i--) {
-        memory.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+        memory.Insert(mut_sites[i], m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
       }
       
       totalMutations += num_mut;
