@@ -1199,6 +1199,20 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
       return false;
     }
   }
+
+  // Do not activate the parasite if its genome is not a exact copy from the genome of its parent
+  if ((m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 2 || m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 3) && parent_parasite != NULL) {
+    if (parent_parasite->UnitGenome().Representation()->AsString() !=  injected_code.AsString()){
+      return false;
+    }
+  }
+
+
+
+  // Require exact copy
+  //if ((m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 1 || m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 3) && (seq != *offspring_seq)) {
+
+  //}
   // Pull the host cell
   const int host_id = host->GetOrgInterface().GetCellID();
   assert(host_id >= 0 && host_id < cell_array.GetSize());

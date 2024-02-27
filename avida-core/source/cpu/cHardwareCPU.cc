@@ -1793,7 +1793,8 @@ bool cHardwareCPU::Divide_Main(cAvidaContext& ctx, const int div_point,
   ConstInstructionSequencePtr seq_p;
   seq_p.DynamicCastFrom(base_genome.Representation());
   const InstructionSequence& seq = *seq_p;
-  if (m_world->GetConfig().REQUIRE_EXACT_COPY.Get() && (seq != *offspring_seq) ) {
+
+  if ((m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 1 || m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 3) && (seq != *offspring_seq)) {
     return false;
   }
   
