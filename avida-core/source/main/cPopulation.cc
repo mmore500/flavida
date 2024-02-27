@@ -1316,7 +1316,8 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   parasite->GetPhenotype().SetupActivateParasite();
 
   // Do any statistics on gestation time for the parent parasite
-  parent_parasite->HandleGestation();
+  if(parent_parasite != NULL)
+    parent_parasite->HandleGestation();
   
   // Handle post injection actions
   if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
