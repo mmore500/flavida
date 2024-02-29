@@ -156,7 +156,7 @@ public:
 
   // Activate the offspring of an organism in the population
   bool ActivateOffspring(cAvidaContext& ctx, const Genome& offspring_genome, cOrganism* parent_organism);
-  bool ActivateParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code);
+  bool ActivateParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code, cAvidaContext &ctx, double mut_multiplier = 1.0, const int maxmut = INT_MAX);
   
   // Helper function for ActivateParasite - returns if the parasite from the infected host should infect the target host
   bool TestForParasiteInteraction(cOrganism* infected_host, cOrganism* target_host);

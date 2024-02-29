@@ -88,7 +88,7 @@ Instruction cInstSet::GetRandomInst(cAvidaContext& ctx) const
   return Instruction(inst_ndx);
 }
 
-Instruction cInstSet::GetRandomInstByTransmissionType(cAvidaContext &ctx, Systematics::TransmissionType transmission_type) {
+Instruction cInstSet::GetRandomInstByTransmissionType(cAvidaContext &ctx, Systematics::TransmissionType transmission_type) const {
       // Get a random instruction
       Instruction curr_inst = GetRandomInst(ctx);
 

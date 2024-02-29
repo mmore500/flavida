@@ -738,7 +738,7 @@ bool cHardwareTransSMT::InjectParasite(cAvidaContext &ctx, double mut_multiplier
   if (injected_code.GetSize() > 0)
   {
     Systematics::UnitPtr parent = ThreadGetOwner();
-    inject_signal = m_organism->InjectParasite(parent, GetLabel().AsString(), injected_code);
+    inject_signal = m_organism->InjectParasite(parent, GetLabel().AsString(), injected_code, ctx);
   }
 
   // reset the memory space that was injected

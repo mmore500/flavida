@@ -135,7 +135,7 @@ public:
   }
 
   Instruction GetRandomInst(cAvidaContext& ctx) const;
-  Instruction GetRandomInstByTransmissionType(cAvidaContext &ctx, Systematics::TransmissionType transmission_type);
+  Instruction GetRandomInstByTransmissionType(cAvidaContext &ctx, Systematics::TransmissionType transmission_type) const;
   int GetRandFunctionIndex(cAvidaContext& ctx) const { return m_lib_name_map[ GetRandomInst(ctx).GetOp() ].lib_fun_id; }
 
   int GetSize() const { return m_lib_name_map.GetSize(); }

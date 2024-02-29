@@ -680,10 +680,10 @@ void cOrganism::NotifyDeath(cAvidaContext& ctx)
 
 
 
-bool cOrganism::InjectParasite(Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code)
+bool cOrganism::InjectParasite(Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code, cAvidaContext &ctx)
 {
   assert(m_interface);
-  return m_interface->InjectParasite(this, parent, label, injected_code);
+  return m_interface->InjectParasite(this, parent, label, injected_code, ctx);
 }
 
 bool cOrganism::ParasiteInfectHost(Systematics::UnitPtr parasite)

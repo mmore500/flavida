@@ -134,7 +134,7 @@ public:
   virtual void Kaboom(int distance, cAvidaContext& ctx, double effect) = 0;
   virtual void SpawnDeme(cAvidaContext& ctx) = 0; 
   virtual int ReceiveValue() = 0;
-  virtual bool InjectParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code) = 0;
+  virtual bool InjectParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code, cAvidaContext &ctx) = 0;
   virtual bool UpdateMerit(cAvidaContext& ctx, double new_merit) = 0;
   virtual bool TestOnDivide() = 0;
   virtual bool SendMessage(cOrgMessage& msg) = 0;

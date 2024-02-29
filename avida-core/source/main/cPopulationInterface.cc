@@ -499,12 +499,12 @@ int cPopulationInterface::ReceiveValue()
   return 0;
 }
 
-bool cPopulationInterface::InjectParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code)
+bool cPopulationInterface::InjectParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code, cAvidaContext &ctx)
 {
   assert(parent != NULL);
   assert(m_world->GetPopulation().GetCell(m_cell_id).GetOrganism() == host);
   
-  return m_world->GetPopulation().ActivateParasite(host, parent, label, injected_code);
+  return m_world->GetPopulation().ActivateParasite(host, parent, label, injected_code, ctx);
 }
 
 bool cPopulationInterface::UpdateMerit(cAvidaContext& ctx, double new_merit)
