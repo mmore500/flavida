@@ -351,7 +351,7 @@ public:
   CONFIG_ADD_VAR(PER_INJECT_MUT_PROB, double, 0.0, "Mutation rate (max one, per inject");
   CONFIG_ADD_VAR(PER_INJECT_INS_PROB, double, 0.0, "Insertion rate (max one, per inject)");
   CONFIG_ADD_VAR(PER_INJECT_DEL_PROB, double, 0.0, "Deletion rate (max one, per inject)");
-  CONFIG_ADD_VAR(PER_INJECT_UNIFORM_PROB, double, 0.0, "Uniform mutation probability (per inject)");
+  CONFIG_ADD_VAR(PER_INJECT_UNIFORM_PROB, double, 0.0, "Uniform mutation probability (per inject). Randomly apply insertion, deletion or point mutation");
   
   CONFIG_ADD_VAR(SLIP_FILL_MODE, int, 0, "Fill insertions from slip mutations with:\n0 = Duplication\n1 = nop-X\n2 = Random\n3 = Scrambled\n4 = nop-C");
   CONFIG_ADD_VAR(SLIP_COPY_MODE, int, 0, "How to handle 'on-copy' slip mutations:\n0 = actual read head slip\n1 = instant large mutation (obeys slip mode)");
