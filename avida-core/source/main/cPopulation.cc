@@ -1228,7 +1228,7 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
     // If we have lines to mutate...
     if (num_mut > 0 && totalMutations < maxmut) {
       for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
-        int site = ctx.GetRandom().GetUInt(injected_code.GetSize());
+        int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
         InstructionSequence new_seq;
         Instruction new_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
         new_seq.Append(new_inst);
@@ -1290,9 +1290,23 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
     // If we have lines to mutate...
     if (num_mut > 0 && totalMutations < maxmut) {
       for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
-        //if (doUniformMutation(host,ctx, temp_code)) totalMutations++;
-        int aaa = 0;
+        int mut = ctx.GetRandom().GetUInt((m_inst_set.GetSize() * 2) + 1);
+        if (mut < m_inst_set.GetSize()) { // point
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+          temp_code[site] = Instruction(mut);
+        } else if (mut == m_inst_set.GetSize()) { // delete
+          if (!min_genome_size || min_genome_size < MIN_GENOME_LENGTH) min_genome_size = MIN_GENOME_LENGTH;
+          if (temp_code.GetSize() == min_genome_size) break;
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+          temp_code.Remove(site);
+        } else { // insert
+          if (!max_genome_size || max_genome_size > MAX_GENOME_LENGTH) max_genome_size = MAX_GENOME_LENGTH;
+          if (temp_code.GetSize() == max_genome_size) break;
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
+          temp_code.Insert(site, Instruction(mut - m_inst_set.GetSize() - 1));
+        }
       }
+      totalMutations += num_mut;
     }
   }
   
