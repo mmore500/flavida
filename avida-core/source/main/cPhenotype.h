@@ -333,7 +333,7 @@ public:
   // Run when being setup as an injected organism.
   void SetupInject(const InstructionSequence & _genome);
 
-  // RRun when a parasite is Injected in the population or a parasite division occurs.
+  // Run when a parasite is Injected in the population or a parasite division occurs.
   void SetupActivateParasite();
 
   // Run when this organism successfully executes a divide.
