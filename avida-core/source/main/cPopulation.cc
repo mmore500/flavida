@@ -6318,15 +6318,14 @@ bool cPopulation::SavePopulation(const cString& filename, bool save_historic, bo
       for (int p = 0; p < parasites.GetSize(); p++) {
         Systematics::GroupPtr pg = parasites[p]->SystematicsGroup("genotype");
 
-<<<<<<< HEAD
-=======
+
         // Get parent parasite
         Apto::SmartPtr<cParasite, Apto::InternalRCObject> thisParasite;
         thisParasite.DynamicCastFrom(parasites[p]);        
         
         //cout << "Gestation_time (" << pg->ID() << "): " << thisParasite->GetPhenotype().GetGestationTime() << endl;
 
->>>>>>> 6b48d39a (calculate Avereage gestation time for parasites)
+
         if (pg == NULL) continue;
         
         sGroupInfo* map_entry = NULL;
@@ -7183,10 +7182,15 @@ void cPopulation::InjectParasite(const cString& label, const InstructionSequence
     // Parasites injected at the beginning of the experiment sterilize their hosts, if that option is set
     if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     // Reset phenotype properties for the injected parasite
 =======
 >>>>>>> 6b48d39a (calculate Avereage gestation time for parasites)
+=======
+
+    // Reset phenotype properties for the injected parasite
+>>>>>>> ab7db6e3 (refactor: cleaned and cocumented parasite gestation time calculations code)
     parasite->GetPhenotype().SetupActivateParasite();
   }
 }
