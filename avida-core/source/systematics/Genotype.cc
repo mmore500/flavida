@@ -310,6 +310,9 @@ void Avida::Systematics::Genotype::HandleUnitGestation(UnitPtr u)
     // Set last_gestation_time for statiscits
     last_gestation_time = time_used - gestation_start;
 
+    // Set gestation time in its phenotype
+    thisParasite->GetPhenotype().SetGestationTime(last_gestation_time);
+
     // Reset phenotype properties for parasite gestation time calculations
     thisParasite->GetPhenotype().SetupActivateParasite();
 

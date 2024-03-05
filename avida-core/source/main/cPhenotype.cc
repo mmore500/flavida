@@ -2461,3 +2461,4 @@ void cPhenotype::SetupActivateParasite()
   // Mark that the phenotype has been initialized.
   initialized = true;
 }
+
