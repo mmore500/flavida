@@ -23,6 +23,7 @@
 #include "cInstSet.h"
 
 #include "avida/core/WorldDriver.h"
+#include "avida/systematics/Types.h"
 
 #include "cArgContainer.h"
 #include "cArgSchema.h"
@@ -85,6 +86,23 @@ Instruction cInstSet::GetRandomInst(cAvidaContext& ctx) const
   double weight = ctx.GetRandom().GetDouble(m_mutation_index->GetTotalWeight());
   unsigned inst_ndx = m_mutation_index->FindPosition(weight);
   return Instruction(inst_ndx);
+}
+
+Instruction cInstSet::GetRandomInstByTransmissionType(cAvidaContext &ctx, Systematics::TransmissionType transmission_type) const {
+      // Get a random instruction
+      Instruction curr_inst = GetRandomInst(ctx);
+
+      // Get Inject instruction
+      Instruction f_inst = GetInst("Inject");
+
+      // Get Divide_Erase instruction
+      Instruction g_inst = GetInst("Divide-Erase");
+
+      // Get random instruccion until the conditions are met     
+      while((curr_inst == f_inst && transmission_type == Systematics::DIVISION) || (curr_inst == g_inst && transmission_type == Systematics::HORIZONTAL)) {
+        curr_inst = GetRandomInst(ctx);
+      }
+      return curr_inst;
 }
 
 

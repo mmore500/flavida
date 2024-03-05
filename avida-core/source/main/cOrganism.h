@@ -299,7 +299,7 @@ public:
   bool ActivateDivide(cAvidaContext& ctx, cContextPhenotype* context_phenotype = 0);
 
   // --------  Parasite Interactions  --------
-  bool InjectParasite(Systematics::UnitPtr parent, const cString& label, const InstructionSequence& genome);
+  bool InjectParasite(Systematics::UnitPtr parent, const cString& label, const InstructionSequence& genome,cAvidaContext &ctx);
   bool ParasiteInfectHost(Systematics::UnitPtr parasite);
   int GetNumParasites() const { return m_parasites.GetSize(); }
   const Apto::Array<Systematics::UnitPtr>& GetParasites() const { return m_parasites; }

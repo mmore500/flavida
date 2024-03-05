@@ -1182,7 +1182,7 @@ bool cPopulation::TestForParasiteInteraction(cOrganism* infected_host, cOrganism
   return true;
 }
 
-bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code)
+bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent, const cString& label, const InstructionSequence& injected_code, cAvidaContext &ctx, double mut_multiplier, const int maxmut)
 {
   assert(parent != NULL);
   
@@ -1199,6 +1199,120 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
       return false;
     }
   }
+
+  // Do not activate the parasite if its genome is not a exact copy from the genome of its parent
+  if ((m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 2 || m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 3) && parent_parasite != NULL) {
+    if (parent_parasite->UnitGenome().Representation()->AsString() !=  injected_code.AsString()){
+      return false;
+    }
+  }
+
+  // Do per inject mutations
+  double per_inject_mut_prob = m_world->GetConfig().PER_INJECT_MUT_PROB.Get();
+  double per_inject_ins_prob = m_world->GetConfig().PER_INJECT_INS_PROB.Get();
+  double per_inject_del_prob = m_world->GetConfig().PER_INJECT_DEL_PROB.Get();
+  double per_inject_uniform_prob = m_world->GetConfig().PER_INJECT_UNIFORM_PROB.Get();
+  int max_genome_size = m_world->GetConfig().MAX_GENOME_SIZE.Get();
+  int min_genome_size = m_world->GetConfig().MIN_GENOME_SIZE.Get();
+
+  int totalMutations = 0;
+  
+  const cInstSet &m_inst_set = host->GetHardware().GetInstSet();
+
+  InstructionSequence temp_code = injected_code;
+  
+    // Divide Mutations (per site)
+  if (per_inject_mut_prob > 0 && totalMutations < maxmut) {
+    int num_mut = ctx.GetRandom().GetRandBinomial(injected_code.GetSize(), 
+                                                  per_inject_mut_prob / mut_multiplier);
+    // If we have lines to mutate...
+    if (num_mut > 0 && totalMutations < maxmut) {
+      for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
+        int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+        InstructionSequence new_seq;
+        Instruction new_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
+        new_seq.Append(new_inst);
+        temp_code.Replace(site, 1, new_seq);
+        totalMutations++;
+      }
+    }
+  }
+
+  // Insert Mutations (per site)
+  if (per_inject_ins_prob > 0 && totalMutations < maxmut) {
+    int num_mut = ctx.GetRandom().GetRandBinomial(temp_code.GetSize(), per_inject_ins_prob);
+    
+    // If would make creature too big, insert up to max_genome_size
+    if (num_mut + temp_code.GetSize() > max_genome_size) {
+      num_mut = max_genome_size - temp_code.GetSize();
+    }
+    
+    // If we have lines to insert...
+    if (num_mut > 0) {
+      cout << temp_code.AsString() << endl;
+      // Build a sorted list of the sites where mutations occured
+      Apto::Array<int> mut_sites(num_mut);
+      for (int i = 0; i < num_mut; i++) mut_sites[i] = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
+      Apto::QSort(mut_sites);
+      
+      // Actually do the mutations (in reverse sort order)
+      for (int i = mut_sites.GetSize() - 1; i >= 0; i--) {
+        temp_code.Insert(mut_sites[i], m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL));
+      }
+      
+      totalMutations += num_mut;
+    }
+  }
+
+    // Delete Mutations (per site)
+  if (per_inject_del_prob > 0 && totalMutations < maxmut) {
+    int num_mut = ctx.GetRandom().GetRandBinomial(temp_code.GetSize(), per_inject_del_prob);
+    
+    // If would make creature too small, delete down to min_genome_size
+    if (temp_code.GetSize() - num_mut < min_genome_size) {
+      num_mut = temp_code.GetSize() - min_genome_size;
+    }
+    
+    // If we have lines to delete...
+    for (int i = 0; i < num_mut; i++) {
+      int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+      temp_code.Remove(site);
+    }
+    
+    totalMutations += num_mut;
+  }
+
+  // Uniform Mutations (per site)
+  if (per_inject_uniform_prob > 0 && totalMutations < maxmut) {
+    int num_mut = ctx.GetRandom().GetRandBinomial(temp_code.GetSize(), 
+                                                  per_inject_uniform_prob / mut_multiplier);
+    
+    // If we have lines to mutate...
+    if (num_mut > 0 && totalMutations < maxmut) {
+      for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
+        int mut = ctx.GetRandom().GetUInt((m_inst_set.GetSize() * 3));
+        if (mut < m_inst_set.GetSize()) { // point
+          if(Instruction(mut).AsString() == "G") continue;
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+          temp_code[site] = Instruction(mut);
+        } else if (mut >= m_inst_set.GetSize() && mut < m_inst_set.GetSize() * 2) { // delete
+          if (!min_genome_size || min_genome_size < MIN_GENOME_LENGTH) min_genome_size = MIN_GENOME_LENGTH;
+          if (temp_code.GetSize() == min_genome_size) break;
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+          temp_code.Remove(site);
+        } else { // insert
+          if(Instruction(mut - m_inst_set.GetSize() * 2).AsString() == "G") continue;
+          if (!max_genome_size || max_genome_size > MAX_GENOME_LENGTH) max_genome_size = MAX_GENOME_LENGTH;
+          if (temp_code.GetSize() == max_genome_size) break;
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
+          temp_code.Insert(site, Instruction(mut - m_inst_set.GetSize() * 2));
+        }
+      }
+      totalMutations += num_mut;
+    }
+  }
+  
+
   // Pull the host cell
   const int host_id = host->GetOrgInterface().GetCellID();
   assert(host_id >= 0 && host_id < cell_array.GetSize());
@@ -1263,7 +1377,7 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   }
   else
   {
-    tmpParasiteGenome = GeneticRepresentationPtr(new InstructionSequence(injected_code));
+    tmpParasiteGenome = GeneticRepresentationPtr(new InstructionSequence(temp_code));
   }
   
   Genome mg(parent->UnitGenome().HardwareType(), parent->UnitGenome().Properties(), tmpParasiteGenome);
@@ -1316,7 +1430,8 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   parasite->GetPhenotype().SetupActivateParasite();
 
   // Do any statistics on gestation time for the parent parasite
-  parent_parasite->HandleGestation();
+  if(parent_parasite != NULL)
+    parent_parasite->HandleGestation();
   
   // Handle post injection actions
   if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
@@ -6318,6 +6433,14 @@ bool cPopulation::SavePopulation(const cString& filename, bool save_historic, bo
       for (int p = 0; p < parasites.GetSize(); p++) {
         Systematics::GroupPtr pg = parasites[p]->SystematicsGroup("genotype");
 
+
+        // Get parent parasite
+        Apto::SmartPtr<cParasite, Apto::InternalRCObject> thisParasite;
+        thisParasite.DynamicCastFrom(parasites[p]);        
+        
+        //cout << "Gestation_time (" << pg->ID() << "): " << thisParasite->GetPhenotype().GetGestationTime() << endl;
+
+
         if (pg == NULL) continue;
         
         sGroupInfo* map_entry = NULL;
@@ -7173,8 +7296,16 @@ void cPopulation::InjectParasite(const cString& label, const InstructionSequence
     Systematics::Manager::Of(m_world->GetNewWorld())->ClassifyNewUnit(parasite);
     // Parasites injected at the beginning of the experiment sterilize their hosts, if that option is set
     if (m_world->GetConfig().INJECT_STERILIZES_HOST.Get()) target_organism->GetPhenotype().Sterilize();
+<<<<<<< HEAD
+<<<<<<< HEAD
 
     // Reset phenotype properties for the injected parasite
+=======
+>>>>>>> 6b48d39a (calculate Avereage gestation time for parasites)
+=======
+
+    // Reset phenotype properties for the injected parasite
+>>>>>>> ab7db6e3 (refactor: cleaned and cocumented parasite gestation time calculations code)
     parasite->GetPhenotype().SetupActivateParasite();
   }
 }

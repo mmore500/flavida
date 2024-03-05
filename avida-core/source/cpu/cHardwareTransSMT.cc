@@ -738,7 +738,7 @@ bool cHardwareTransSMT::InjectParasite(cAvidaContext &ctx, double mut_multiplier
   if (injected_code.GetSize() > 0)
   {
     Systematics::UnitPtr parent = ThreadGetOwner();
-    inject_signal = m_organism->InjectParasite(parent, GetLabel().AsString(), injected_code);
+    inject_signal = m_organism->InjectParasite(parent, GetLabel().AsString(), injected_code, ctx);
   }
 
   // reset the memory space that was injected
@@ -1178,7 +1178,8 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     for (int i = 0; i < num_mut; i++)
     {
       int site = ctx.GetRandom().GetUInt(injected_code.GetSize());
-      injected_code[site] = m_inst_set->GetRandomInst(ctx);
+
+      injected_code[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
     }
   }
 
@@ -1200,7 +1201,7 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     // Actually do the mutations (in reverse sort order)
     for (int i = num_mut - 1; i >= 0; i--)
     {
-      injected_code.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+      injected_code.Insert(mut_sites[i], m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
     }
   }
 
@@ -1235,7 +1236,7 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
       for (int i = 0; i < num_mut; i++)
       {
         int site = ctx.GetRandom().GetUInt(memory.GetSize());
-        memory[site] = m_inst_set->GetRandomInst(ctx);
+        memory[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
       }
     }
   }
@@ -1263,7 +1264,7 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
       // Actually do the mutations (in reverse sort order)
       for (int i = mut_sites.GetSize() - 1; i >= 0; i--)
       {
-        memory.Insert(mut_sites[i], m_inst_set->GetRandomInst(ctx));
+        memory.Insert(mut_sites[i], m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
       }
     }
   }
@@ -1556,7 +1557,7 @@ bool cHardwareTransSMT::Inst_HeadRead(cAvidaContext &ctx)
 
   if (m_organism->TestCopyMut(ctx) && toMutate)
   {
-    read_inst = m_inst_set->GetRandomInst(ctx).GetOp();
+    read_inst = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type).GetOp();
   }
   else
   {
@@ -1816,6 +1817,11 @@ bool cHardwareTransSMT::Inst_ThreadKill(cAvidaContext &)
 //  into the complement template found in a neighboring organism.
 bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
 {
+  // Execute Inst_Divide_Erase for parasites in analyze mode only
+  if (m_world->GetConfig().ANALYZE_MODE.Get() > 0 && ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL) {
+    return Inst_Divide_Erase(ctx);
+  }
+  
   ReadLabel(MAX_MEMSPACE_LABEL);
 
   if (ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)

@@ -347,6 +347,11 @@ public:
   CONFIG_ADD_VAR(INJECT_MUT_PROB, double, 0.0, "Substitution rate (per site, applied on inject)");
   CONFIG_ADD_VAR(INJECT_INS_PROB, double, 0.0, "Insertion rate (per site, applied on inject)");
   CONFIG_ADD_VAR(INJECT_DEL_PROB, double, 0.0, "Deletion rate (per site, applied on inject)");
+
+  CONFIG_ADD_VAR(PER_INJECT_MUT_PROB, double, 0.0, "Mutation rate (max one, per inject");
+  CONFIG_ADD_VAR(PER_INJECT_INS_PROB, double, 0.0, "Insertion rate (max one, per inject)");
+  CONFIG_ADD_VAR(PER_INJECT_DEL_PROB, double, 0.0, "Deletion rate (max one, per inject)");
+  CONFIG_ADD_VAR(PER_INJECT_UNIFORM_PROB, double, 0.0, "Uniform mutation probability (per inject). Randomly apply insertion, deletion or point mutation");
   
   CONFIG_ADD_VAR(SLIP_FILL_MODE, int, 0, "Fill insertions from slip mutations with:\n0 = Duplication\n1 = nop-X\n2 = Random\n3 = Scrambled\n4 = nop-C");
   CONFIG_ADD_VAR(SLIP_COPY_MODE, int, 0, "How to handle 'on-copy' slip mutations:\n0 = actual read head slip\n1 = instant large mutation (obeys slip mode)");
@@ -402,7 +407,7 @@ public:
   CONFIG_ADD_VAR(REQUIRE_SINGLE_REACTION, int, 0, "If set to 1, at least one reaction is required for a successful divide");
   CONFIG_ADD_VAR(MAX_UNIQUE_TASK_COUNT, int, -1, "Division will fail if organism performs more than MAX_TASK_COUNT when MAX_TASK_COUNT >= 0");
   CONFIG_ADD_VAR(REQUIRED_BONUS, double, 0.0, "Required bonus to divide");
-  CONFIG_ADD_VAR(REQUIRE_EXACT_COPY, int, 0, "Require offspring to be an exact copy (checked before divide mutations)");
+  CONFIG_ADD_VAR(REQUIRE_EXACT_COPY, int, 0, "Require offspring to be an exact copy (checked before divide mutations)\n0 = not required, neither for hosts nor parasites\n1 = only for hosts\n2 = only for parasites\n3 = for both, hosts and parasites");
   CONFIG_ADD_VAR(REQUIRED_RESOURCE, int, -1, "ID of resource required in organism's internal bins for successful\n  divide (resource not consumed)");
   CONFIG_ADD_VAR(REQUIRED_RESOURCE_LEVEL, double, 0.0, "Level of resource needed for REQUIRED_RESOURCE");  
   CONFIG_ADD_VAR(REQUIRED_PRED_HABITAT, int, -1, "Required resource habitat type in cell for predators to reproduce");  

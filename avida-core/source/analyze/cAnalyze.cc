@@ -839,7 +839,7 @@ void cAnalyze::LoadFile(cString cur_string)
       cString rvData = cur_line.PopWord();
       if(rvData == "horz:int")
         namePrefix = "par-%d";
-      else if(rvData == "div:int")
+      else if(rvData == "div:int" || rvData == "div:ext")
         namePrefix = "org-%d";
       data_command->SetValue(genotype, rvData);
     }
@@ -10355,6 +10355,15 @@ void cAnalyze::BatchRecalculate(cString cur_string)
   cAnalyzeGenotype * genotype = NULL;
   cAnalyzeGenotype * last_genotype = NULL;
   while ((genotype = batch_it.Next()) != NULL) {    
+
+    if(genotype->GetName().Find("par") != -1) {
+      // The genotype owns to a parasite, set transmission type to HORIZONTAL
+      test_info.SetTransmissionType(Systematics::HORIZONTAL);
+    } else {
+      // The genotype owns to a host, set transmission type to DIVISION
+      test_info.SetTransmissionType(Systematics::DIVISION);
+    }
+    
     // If the previous genotype was the parent of this one, pass in a pointer
     // to it for improved recalculate (such as distance to parent, etc.)
     if (last_genotype != NULL && genotype->GetParentID() == last_genotype->GetID()) {
@@ -11098,10 +11107,7 @@ void cAnalyze::ProcessCommands(tList<cAnalyzeCommand>& clist)
     cString command = cur_command->GetCommand();
     cString args = cur_command->GetArgs();
     PreProcessArgs(args);
-    if (command == "FIND_LINEAGE") {
-      int aaa;
-      aaa = 0;
-    }
+    
     cAnalyzeCommandDefBase* command_fun = FindAnalyzeCommandDef(command);
     
     cUserFeedback feedback;

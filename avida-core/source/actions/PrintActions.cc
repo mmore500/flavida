@@ -5440,6 +5440,87 @@ public:
 };
 
 
+//LZ - dump the host gestation grid
+class cActionDumpHostGestationGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHostGestationGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_gestation_hosts.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int gestation_time = 0;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true) {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          gestation_time = organism->GetPhenotype().GetGestationTime();
+        } else { gestation_time = -1; }
+        fp << gestation_time << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
+//LZ - dump the parasite gestation grid
+class cActionDumpParasiteGestationGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpParasiteGestationGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_gestation_parasites.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int gestation_time = 0;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true) {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if(organism->GetNumParasites() > 0)
+          {
+            Apto::Array<Systematics::UnitPtr> parasites = organism->GetParasites();
+            Apto::SmartPtr<cParasite, Apto::InternalRCObject> parasite;
+            parasite.DynamicCastFrom(parasites[0]);
+            gestation_time = parasite->GetPhenotype().GetGestationTime();
+          }
+          else { gestation_time = -1; }
+        }
+        else { gestation_time = -1; }
+        fp << gestation_time << " ";
+      }
+      fp << endl;
+    }
+  }
+};
 
 
 
@@ -5678,7 +5759,9 @@ void RegisterPrintActions(cActionLibrary* action_lib)
   action_lib->Register<cActionDumpParasiteTaskGridComma>("DumpParasiteTaskGridComma");
   action_lib->Register<cActionDumpParasiteVirulenceGrid>("DumpParasiteVirulenceGrid");
   action_lib->Register<cActionDumpOffspringMigrationCounts>("DumpOffspringMigrationCounts"); 
-  action_lib->Register<cActionDumpParasiteMigrationCounts>("DumpParasiteMigrationCounts"); 
+  action_lib->Register<cActionDumpParasiteMigrationCounts>("DumpParasiteMigrationCounts");
+  action_lib->Register<cActionDumpHostGestationGrid>("DumpHostGestationGrid");
+  action_lib->Register<cActionDumpParasiteGestationGrid>("DumpParasiteGestationGrid");
   
   action_lib->Register<cActionDumpReactionGrid>("DumpReactionGrid");
   action_lib->Register<cActionPrintLastReactionCountGrid>("PrintLastReactionCountGrid");
