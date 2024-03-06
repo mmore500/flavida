@@ -1,7 +1,6 @@
-Avida   http://avida.devosoft.org/
+[Avida](http://avida.devosoft.org/)
 --------------------------------------------------------------------------------
 Digital Evolution Laboratory at Michigan State University
-(http://devolab.msu.edu)
 
 
 The top-level repository/distribution of Avida consists of multiple submodules.
@@ -165,8 +164,8 @@ $ ./run_tests --builddir=build/Deployment/
 VI. DOCUMENTATION
 --------------------------------------------------------------------------------
 
-Helpful usage and code documentation can be found in the HTML files in the
-'avida-core/documentation' directory.  See index.html.
+Helpful usage and code documentation can be found in the md files in the
+'documentation' directory.  See [Home.md](documentation/Home.md).
 
 
-Revised 2011-05-05 DMB
+Revised 2024-03-06
