@@ -2449,14 +2449,12 @@ Apto::Array<int> cPhenotype::GetCumulativeReactionCount()
 // Setup/update values for parasite gestation time calculations
 void cPhenotype::SetupActivateParasite()
 {
-  // Increment the number of parasite divides.
-  num_divides++;
-  
   // Set the start time of the gestation period.
   gestation_start = time_used;
   
   // Reset the gestation time counter to zero.
-  gestation_time = 0;
+  if (!initialized)
+    gestation_time = 0;
   
   // Mark that the phenotype has been initialized.
   initialized = true;
