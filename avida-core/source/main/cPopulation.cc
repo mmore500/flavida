@@ -1193,13 +1193,6 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   Apto::SmartPtr<cParasite, Apto::InternalRCObject> parent_parasite;
   parent_parasite.DynamicCastFrom(parent);
   
-  // Do not activate the parasite if the size of its genome is different from that of its parent
-  if(m_world->GetConfig().PARASITE_GENOME_SIZE_AS_PARENT.Get() == 1 && parent_parasite != NULL) {
-    if (parent_parasite->GetSeqSize() != injected_code.GetSize()) {
-      return false;
-    }
-  }
-
   // Do not activate the parasite if its genome is not a exact copy from the genome of its parent
   if ((m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 2 || m_world->GetConfig().REQUIRE_EXACT_COPY.Get() == 3) && parent_parasite != NULL) {
     if (parent_parasite->UnitGenome().Representation()->AsString() !=  injected_code.AsString()){
