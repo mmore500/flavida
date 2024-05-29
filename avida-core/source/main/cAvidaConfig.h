@@ -418,7 +418,8 @@ public:
   CONFIG_ADD_VAR(IMPLICIT_REPRO_CPU_CYCLES, int, 0, "Call Inst_Repro after this many cpu cycles. 0 = OFF");  
   CONFIG_ADD_VAR(IMPLICIT_REPRO_TIME, int, 0, "Call Inst_Repro after this time used. 0 = OFF");  
   CONFIG_ADD_VAR(IMPLICIT_REPRO_END, int, 0, "Call Inst_Repro after executing the last instruction in the genome.");  
-  CONFIG_ADD_VAR(IMPLICIT_REPRO_ENERGY, double, 0.0, "Call Inst_Repro if organism accumulates this amount of energy.");   
+  CONFIG_ADD_VAR(IMPLICIT_REPRO_ENERGY, double, 0.0, "Call Inst_Repro if organism accumulates this amount of energy.");
+  CONFIG_ADD_VAR(PARASITE_BIRTH_METHOD, int, 0, "Where should the parasite's offspring be placed when it gives birth?\n0 = Random from grid\n1 = Random from neighborhood\n2 = Random from host population in the grid\n3 = Random from host population in the neighborhood\n4 = Random from uninfected host population in the grid\n5 = Random from uninfected host population in the neighborhood");
 
   // -------- Recombination config options --------
   CONFIG_ADD_GROUP(RECOMBINATION_GROUP, "Sexual Recombination and Modularity");

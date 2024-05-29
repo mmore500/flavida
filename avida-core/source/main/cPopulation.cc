@@ -1315,7 +1315,8 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   // Select a target organism
   // @TODO - activate parasite target selection should account for hardware type
   cOrganism* target_organism = NULL;
-  // If there's any migration turned on ... try this first
+
+  // If there's more than one deme and migration is turned on ... try this first
   if(m_world->GetConfig().NUM_DEMES.Get() > 0 && m_world->GetConfig().DEMES_PARASITE_MIGRATION_RATE.Get() > 0.0 && m_world->GetConfig().DEMES_MIGRATION_METHOD.Get() == 4 && m_world->GetRandom().P(m_world->GetConfig().DEMES_PARASITE_MIGRATION_RATE.Get())){
     cDeme& deme = GetDeme(m_world->GetMigrationMatrix().GetProbabilisticDemeID(host_cell.GetDemeID(), m_world->GetRandom(),true));
     
@@ -1326,8 +1327,8 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
       target_organism = rand_cell.GetOrganism();
     }    
   }
-  else{
-    // Else there was no migration ... Resort to the default BIRTH_METHOD
+  // Else if there is more than one deme but no migration ... Resort to the default BIRTH_METHOD
+  else if(m_world->GetConfig().NUM_DEMES.Get() > 1) {
     if (m_world->GetConfig().BIRTH_METHOD.Get() ==  POSITION_OFFSPRING_FULL_SOUP_RANDOM) {
       target_organism = GetCell(m_world->GetRandom().GetUInt(cell_array.GetSize())).GetOrganism();
     } 
@@ -1339,13 +1340,71 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
       }    
     }
     else {
-      target_organism =
-      host_cell.ConnectionList().GetPos(m_world->GetRandom().GetUInt(host->GetNeighborhoodSize()))->GetOrganism();
-    }     
+      target_organism = host_cell.ConnectionList().GetPos(m_world->GetRandom().GetUInt(host->GetNeighborhoodSize()))->GetOrganism();
+    }
   }
-  
-  if (target_organism == NULL) return false;
-  
+  // If there is a single deme
+  else if (m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 0) {
+      target_organism = GetCell(m_world->GetRandom().GetUInt(cell_array.GetSize())).GetOrganism();
+  }
+  else if (m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 1) {
+      target_organism = host_cell.ConnectionList().GetPos(m_world->GetRandom().GetUInt(host->GetNeighborhoodSize()))->GetOrganism();
+  } 
+  else if (m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() > 1) {
+    // chek if there are occupied cells
+    bool has_occupied_cells = false;
+    bool has_non_infected_hosts = false;
+    if (m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 2 || m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 4) {
+      // grid
+      for(int i=0; i < cell_array.GetSize(); i++) {
+        cPopulationCell& current_cell = cell_array[i];
+        if(current_cell.IsOccupied()) {
+          has_occupied_cells = true;
+          if(current_cell.GetOrganism()->GetParasites().GetSize() == 0)
+            has_non_infected_hosts = true;
+        }
+      }
+    } else {
+      // neighborhood
+      for(int i=0; i < host->GetNeighborhoodSize(); i++) {
+        if(host_cell.ConnectionList().GetPos(i)->IsOccupied()) {
+          has_occupied_cells = true;
+          if(host_cell.ConnectionList().GetPos(i)->GetOrganism()->GetParasites().GetSize() == 0)
+            has_non_infected_hosts = true;
+        }
+      }
+    }
+    
+    if(!has_occupied_cells) {
+      return false;
+    }
+    
+    // select the target organism
+    while(target_organism == NULL) {
+      if (m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 2 || m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 4) {
+        // grid
+        target_organism = GetCell(m_world->GetRandom().GetUInt(cell_array.GetSize())).GetOrganism();
+      } else {
+        // neighborhood
+        target_organism = host_cell.ConnectionList().GetPos(m_world->GetRandom().GetUInt(host->GetNeighborhoodSize()))->GetOrganism();
+      }
+      // check if target organism is already infected
+      if (m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 4 || m_world->GetConfig().PARASITE_BIRTH_METHOD.Get() == 5) {
+        if(!has_non_infected_hosts) {
+          return false; // there are non infected hosts
+        }
+        // If the organism is already infected must select a target organism again
+        if(target_organism != NULL) {
+          if(target_organism->GetParasites().GetSize() > 0)
+            target_organism = NULL;
+        } 
+      }
+    }
+  }
+
+  if(target_organism == NULL) {
+    return false;
+  }
   
   // Pre-check target hardware
   const cHardwareBase& hw = target_organism->GetHardware();
