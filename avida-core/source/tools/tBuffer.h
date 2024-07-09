@@ -81,6 +81,7 @@ public:
   int GetTotal() const { return total; }
   int GetNumStored() const { return (total <= data.GetSize()) ? total : data.GetSize(); }
   int GetNum() const { return total - last_total; }
+  int GetOffset() const { return offset; }
 };
 
 #endif

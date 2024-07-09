@@ -863,7 +863,10 @@ void cPhenotype::DivideReset(const InstructionSequence& _genome)
   last_num_donates          = cur_num_donates;
   last_task_count           = cur_task_count;
   last_host_tasks           = cur_host_tasks;
-  last_para_tasks           = cur_para_tasks;
+  // RO: do not set tasks when the parasite uses its own buffers
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 0) {
+    last_para_tasks = cur_para_tasks;
+  }
   last_internal_task_count  = cur_internal_task_count;
   last_task_quality         = cur_task_quality;
   last_task_value           = cur_task_value;

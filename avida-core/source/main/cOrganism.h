@@ -25,6 +25,7 @@
 
 #include "avida/core/Genome.h"
 #include "avida/systematics/Unit.h"
+#include "avida/systematics/Types.h"
 
 #include "avida/private/systematics/GenomeTestMetrics.h"
 
@@ -86,9 +87,12 @@ private:
   Genome m_offspring_genome;              // Child genome, while under construction.
 
   // Input and Output with the environment
-  int m_input_pointer;
-  tBuffer<int> m_input_buf;
-  tBuffer<int> m_output_buf;
+  int m_input_pointer;                    // input pointer for hosts.
+  int m_input_pointer_parasites;          // input pointer for parasites.
+  tBuffer<int> m_input_buf;               // input buffer for hosts.
+  tBuffer<int> m_input_buf_parasites;     // input buffer for parasites.
+  tBuffer<int> m_output_buf;              // ouput buffer for hosts.
+  tBuffer<int> m_output_buf_parasites;    // ouput buffer for hosts.
   tBuffer<int> m_received_messages;
 
   int m_cur_sg;
@@ -137,12 +141,13 @@ public:
   void NotifyDeath(cAvidaContext& ctx);
 
   void PrintStatus(std::ostream& fp);
+  void PrintStatus(std::ostream& fp, Systematics::TransmissionType transmission_type);
   void PrintMiniTraceStatus(cAvidaContext& ctx, std::ostream& fp);
   void PrintMiniTraceSuccess(std::ostream& fp, const int exec_success);
   void PrintFinalStatus(std::ostream& fp, int time_used, int time_allocated) const;
   void Fault(int fault_loc, int fault_type, cString fault_desc="");
 
-  void NewTrial();
+  void NewTrial(Systematics::TransmissionType transmission_type = Systematics::UNKNOWN);
 
   // --------  Accessor Methods  --------
   const Genome& GetGenome() const { return m_initial_genome; }
@@ -245,11 +250,31 @@ public:
   int GetNeighborCellContents() const { return m_interface->GetNeighborCellContents(); }
   void Rotate(cAvidaContext& ctx, int direction) { m_interface->Rotate(ctx, direction); }
 
-  int GetInputAt(int i) { return m_interface->GetInputAt(i); }
+  int GetInputAt(int i) {
+    return m_interface->GetInputAt(i);
+  }
+  int GetInputAtPointer(int i) {
+    int curr_pointer = m_input_pointer;
+    int curr_pointer_parasites = m_input_pointer_parasites;
+    int value = m_interface->GetInputAt(i); 
+    m_input_pointer = curr_pointer;
+    m_input_pointer_parasites = curr_pointer_parasites; 
+    return value; 
+  }
   int GetNextInput() { return m_interface->GetInputAt(m_input_pointer); }
-  int GetNextInput(int& in_input_pointer) { return m_interface->GetInputAt(in_input_pointer); }
+  int GetNextInput(Systematics::TransmissionType transmission_type) { 
+    if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+      return m_interface->GetInputAt(m_input_pointer_parasites);
+    else
+      return m_interface->GetInputAt(m_input_pointer);
+  }
+  int GetNextInput(int& in_input_pointer) {
+    return m_interface->GetInputAt(in_input_pointer);
+  }
   tBuffer<int>& GetInputBuf() { return m_input_buf; }
+  tBuffer<int>& GetInputBufParasites() { return m_input_buf_parasites; }
   tBuffer<int>& GetOutputBuf() { return m_output_buf; }
+  tBuffer<int>& GetOutputBufParasites() { return m_output_buf_parasites; }
   void Die(cAvidaContext& ctx) { m_interface->Die(ctx); m_is_dead = true; } 
   void KillCellID(int target, cAvidaContext& ctx) { m_interface->KillCellID(target, ctx); } 
   void Kaboom(int dist, cAvidaContext& ctx) { m_interface->Kaboom(dist,ctx);}
@@ -276,24 +301,58 @@ public:
 
   // --------  Input and Output Methods  --------
   void DoInput(const int value);
+  void DoInput(const int value, Systematics::TransmissionType transmission_type);
   void DoInput(tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value);
 
   /* These different flavors of DoOutput are "frontends" to the main DoOutput
   that follows - One DoOutput to rule them all, etc., etc. */
   //! Check tasks based on the current state of this organism's IO & message buffers.
   // void DoOutput(cAvidaContext& ctx, const bool on_divide=false);
-  void DoOutput(cAvidaContext& ctx, const bool on_divide=false, cContextPhenotype* context_phenotype = 0); 
+  void DoOutput(cAvidaContext& ctx, const bool on_divide=false, cContextPhenotype* context_phenotype = 0, Systematics::TransmissionType transmission_type = Systematics::UNKNOWN); 
   //! Add the passed-in value to this organism's output buffer, and check tasks (on_divide=false).
-  void DoOutput(cAvidaContext& ctx, const int value);
+  void DoOutput(cAvidaContext& ctx, const int value, Systematics::TransmissionType transmission_type);
   //! Check if we're calling this from a parasite.
   void DoOutput(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype);
   //! Check tasks based on the passed-in IO buffers and value (on_divide=false).
-  void DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value);    
+  void DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value, Systematics::TransmissionType transmission_type);    
 
   void ClearInput() { m_input_buf.Clear(); }
-  void ResetInput() {m_input_pointer = 0; m_input_buf.Clear(); };
-  void AddOutput(int val) { m_output_buf.Add(val); }
+  void ResetInput() { m_input_pointer = 0; m_input_buf.Clear(); };
+  void ResetInput(Systematics::TransmissionType transmission_type) {
+    if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+      m_input_pointer_parasites = 0;
+      m_input_buf_parasites.Clear();
+    } else {
+      ResetInput();
+    }
 
+  }
+  void AddOutput(int val) { m_output_buf.Add(val); }
+  void AddOutput(int val, Systematics::TransmissionType transmission_type) {
+    if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+      m_output_buf_parasites.Add(val);
+    } else {
+      AddOutput(val);
+    }
+  }
+  int GetInputPointer(Systematics::TransmissionType transmission_type) {
+    if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+      return m_input_pointer_parasites;
+    else
+      return m_input_pointer;
+  }
+  int GetInputBufferOffset() {
+    return m_input_buf.GetOffset();
+  }
+  int GetOutputBufferOffset() {
+    return m_output_buf.GetOffset();
+  }
+  int GetInputBufferOffsetParasites() {
+    return m_input_buf_parasites.GetOffset();
+  }
+  int GetOutputtBufferOffsetParasites() {
+    return m_output_buf_parasites.GetOffset();
+  }
   // --------  Divide Methods  --------
   bool Divide_CheckViable(cAvidaContext& ctx);
   bool ActivateDivide(cAvidaContext& ctx, cContextPhenotype* context_phenotype = 0);
