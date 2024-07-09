@@ -1752,12 +1752,13 @@ bool cHardwareTransSMT::Inst_IO(cAvidaContext &ctx)
 
   // Do the "put" component
   const int value_out = Stack(src).Top();
-
   m_organism->DoOutput(ctx, value_out, ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL, &m_threads[m_cur_thread].context_phenotype); // Check for tasks compleated.
+
   // Do the "get" component
-  const int value_in = m_organism->GetNextInput();
+  const int value_in = m_organism->GetNextInput(ThreadGetOwner()->UnitSource().transmission_type);
   Stack(dst).Push(value_in);
-  m_organism->DoInput(value_in);
+  m_organism->DoInput(value_in, ThreadGetOwner()->UnitSource().transmission_type);
+
   return true;
 }
 
@@ -1836,7 +1837,19 @@ bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
   }
 
   double mut_multiplier = 1.0;
-  return InjectParasite(ctx, mut_multiplier);
+  bool inject_signal = InjectParasite(ctx, mut_multiplier);
+
+  // RO: Reset input buffers and local stacks
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && m_world->GetConfig().INJECT_RESET.Get() && ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
+  {
+    // Reset input buffers
+    m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);
+    // Reset stacks
+    for (int i = 0; i < NUM_LOCAL_STACKS; i++)
+      Stack(i).Clear();
+  }
+
+  return inject_signal;
 }
 
 // 38
@@ -1975,6 +1988,16 @@ bool cHardwareTransSMT::Inst_Divide_Asex_Wait(cAvidaContext &ctx)
 bool cHardwareTransSMT::Inst_Divide_Erase(cAvidaContext &ctx)
 {
   bool toReturn = Divide_Main(ctx);
+  // RO: Reset input buffers and local stacks
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && m_world->GetConfig().DIVIDE_HOST_RESET.Get() && ThreadGetOwner()->UnitSource().transmission_type == Systematics::DIVISION)
+  {
+    // Reset input pointer
+    m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);
+    // Reset stacks
+    for (int i = 0; i < NUM_LOCAL_STACKS; i++)
+      Stack(i).Clear();
+  }
+
   if (toReturn)
     return toReturn;
 

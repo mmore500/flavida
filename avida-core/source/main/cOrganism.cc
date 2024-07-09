@@ -24,6 +24,7 @@
 
 #include "avida/core/Feedback.h"
 #include "avida/core/WorldDriver.h"
+#include "avida/systematics/Types.h"
 
 #include "cAvidaContext.h"
 #include "cContextPhenotype.h"
@@ -159,8 +160,11 @@ cOrganism::cOrganism(cWorld* world, cAvidaContext& ctx, const Genome& genome, in
   , m_display(false)
   , m_lyse_display(false)
   , m_input_pointer(0)
+  , m_input_pointer_parasites(0)
   , m_input_buf(world->GetEnvironment().GetInputSize())
+  , m_input_buf_parasites(world->GetEnvironment().GetInputSize())
   , m_output_buf(world->GetEnvironment().GetOutputSize())
+  , m_output_buf_parasites(world->GetEnvironment().GetOutputSize())
   , m_received_messages(RECEIVED_MESSAGES_SIZE)
   , m_cur_sg(0)
   , m_sent_value(0)
@@ -365,9 +369,15 @@ int cOrganism::ReceiveValue()
   return out_value;
 }
 
-void cOrganism::DoInput(const int value)
-{
-  DoInput(m_input_buf, m_output_buf, value);
+void cOrganism::DoInput(const int value) {
+    DoInput(m_input_buf, m_output_buf, value);
+}
+
+void cOrganism::DoInput(const int value, Systematics::TransmissionType transmission_type) {
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+    DoInput(m_input_buf_parasites, m_output_buf_parasites, value);
+  else
+    DoInput(m_input_buf, m_output_buf, value);
 }
 
 void cOrganism::DoInput(tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value)
@@ -376,31 +386,48 @@ void cOrganism::DoInput(tBuffer<int>& input_buffer, tBuffer<int>& output_buffer,
   m_phenotype.TestInput(input_buffer, output_buffer);
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, const bool on_divide, cContextPhenotype* context_phenotype)
+void cOrganism::DoOutput(cAvidaContext& ctx, const bool on_divide, cContextPhenotype* context_phenotype, Systematics::TransmissionType transmission_type)
 {
-  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, on_divide, false, context_phenotype);
-  else doOutput(ctx, m_input_buf, m_output_buf, on_divide, false, context_phenotype);
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+    if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, on_divide, transmission_type == Systematics::HORIZONTAL, context_phenotype);
+    else doOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, on_divide, transmission_type == Systematics::HORIZONTAL, context_phenotype);
+  } else {
+    if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, on_divide, transmission_type == Systematics::HORIZONTAL, context_phenotype);
+    else doOutput(ctx, m_input_buf, m_output_buf, on_divide, transmission_type == Systematics::HORIZONTAL, context_phenotype);    
+  }
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, const int value)
+void cOrganism::DoOutput(cAvidaContext& ctx, const int value, Systematics::TransmissionType transmission_type)
 {
-  m_output_buf.Add(value);
-  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, false, false);
-  else doOutput(ctx, m_input_buf, m_output_buf, false, false);
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+    m_output_buf_parasites.Add(value);
+    if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, false, transmission_type == Systematics::HORIZONTAL);
+    else doOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, false, transmission_type == Systematics::HORIZONTAL);
+  } else {
+    m_output_buf.Add(value);
+    if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, false, transmission_type == Systematics::HORIZONTAL);
+    else doOutput(ctx, m_input_buf, m_output_buf, false, transmission_type == Systematics::HORIZONTAL);
+  }
 }
 
 void cOrganism::DoOutput(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype) 
 {
-  m_output_buf.Add(value);
-  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, false, (bool)is_parasite, context_phenotype); 
-  else doOutput(ctx, m_input_buf, m_output_buf, false, (bool)is_parasite, context_phenotype); 
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite) {
+    m_output_buf_parasites.Add(value);
+    if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, false, is_parasite, context_phenotype); 
+    else doOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, false, is_parasite, context_phenotype); 
+  } else {
+    m_output_buf.Add(value);
+    if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, false, is_parasite, context_phenotype); 
+    else doOutput(ctx, m_input_buf, m_output_buf, false, is_parasite, context_phenotype); 
+  }
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value)
+void cOrganism::DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value, Systematics::TransmissionType transmission_type)
 {
   output_buffer.Add(value);
-  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, input_buffer, output_buffer, false, false);
-  else doOutput(ctx, input_buffer, output_buffer, false, false);
+  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, input_buffer, output_buffer, false, transmission_type == Systematics::HORIZONTAL);
+  else doOutput(ctx, input_buffer, output_buffer, false, transmission_type == Systematics::HORIZONTAL);
 }
 
 
@@ -426,8 +453,10 @@ void cOrganism::doOutput(cAvidaContext& ctx,
       m_interface->Rotate(ctx);
       cOrganism * cur_neighbor = m_interface->GetNeighbor();
       if (cur_neighbor == NULL) continue;
-      
-      other_input_list.Push( &(cur_neighbor->m_input_buf) );
+      if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite)
+        other_input_list.Push( &(cur_neighbor->m_input_buf_parasites) );
+      else
+        other_input_list.Push( &(cur_neighbor->m_input_buf) );
     }
   }
   
@@ -543,7 +572,10 @@ void cOrganism::doAVOutput(cAvidaContext& ctx,
       const Apto::Array<cOrganism*>& cur_neighbors = m_interface->GetFacedAVs();
       for (int i = 0; i < cur_neighbors.GetSize(); i++) {
         if (cur_neighbors[i] == NULL) continue;
-        other_input_list.Push( &(cur_neighbors[i]->m_input_buf) );
+        if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite)
+          other_input_list.Push( &(cur_neighbors[i]->m_input_buf_parasites) );
+        else
+          other_input_list.Push( &(cur_neighbors[i]->m_input_buf) );
       }
     }
   }
@@ -726,8 +758,11 @@ bool cOrganism::GetSterilizeTaskLoss() const { return m_world->GetConfig().STERI
 double cOrganism::GetNeutralMin() const { return m_world->GetConfig().NEUTRAL_MIN.Get(); }
 double cOrganism::GetNeutralMax() const { return m_world->GetConfig().NEUTRAL_MAX.Get(); }
 
+void cOrganism::PrintStatus(ostream& fp) {
+  PrintStatus(fp, Systematics::UNKNOWN);
+}
 
-void cOrganism::PrintStatus(ostream& fp)
+void cOrganism::PrintStatus(ostream& fp, Systematics::TransmissionType transmission_type)
 {
   fp << "---------------------------" << endl;
 	fp << "U:" << m_world->GetStats().GetUpdate() << endl;
@@ -738,7 +773,12 @@ void cOrganism::PrintStatus(ostream& fp)
   fp << setbase(16) << setfill('0');
   
   fp << "Input (env):";
-  for (int i = 0; i < m_input_buf.GetCapacity(); i++) {
+  int buf_capacity;
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+    buf_capacity = m_input_buf_parasites.GetCapacity();
+  else
+    buf_capacity = m_input_buf.GetCapacity();
+  for (int i = 0; i < buf_capacity; i++) {
     int j = i; // temp holder, because GetInputAt self adjusts the input pointer
     fp << " 0x" << setw(8) << m_interface->GetInputAt(j);
   }
@@ -962,13 +1002,18 @@ void cOrganism::Fault(int fault_loc, int fault_type, cString fault_desc)
   m_phenotype.IncErrors();
 }
 
-void cOrganism::NewTrial()
+void cOrganism::NewTrial(Systematics::TransmissionType transmission_type)
 {
-  //More should be reset here... @JEB
+  // More should be reset here... @JEB
   GetPhenotype().NewTrial();
   m_input_pointer = 0;
-  m_input_buf.Clear();
   m_output_buf.Clear();
+  // Reset parasite input pointer and clear parasite input buffer if it has its own buffers
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+    m_input_pointer_parasites = 0;
+    m_input_buf_parasites.Clear();
+  } else
+    m_input_buf.Clear();
 }
 
 

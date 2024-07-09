@@ -370,6 +370,7 @@ public:
   // -------- Birth and Death config options --------
   CONFIG_ADD_GROUP(REPRODUCTION_GROUP, "Birth and Death config options");
   CONFIG_ADD_VAR(DIVIDE_FAILURE_RESETS, int, 0, "When Divide fails, organisms are interally reset");
+  CONFIG_ADD_VAR(DIVIDE_HOST_RESET, int, 0, "Should the pointer go back to the first value of the input array when a Divide-Erase instruction is executed, or stay at its current value? If 1, the host will use the same sequence of input values (taken from the three values of the input array randomly assigned when it was born) after a Divide-Erase instruction is executed; that is, phenotypic plasticity will not occur as a result of more than one host replication attempt; this parameter only works when PARASITES_USE_OWN_BUFFERS is 1.");
   CONFIG_ADD_VAR(BIRTH_METHOD, int, 0, "Which organism should be replaced when a birth occurs?\n0 = Random organism in neighborhood\n1 = Oldest in neighborhood\n2 = Largest Age/Merit in neighborhood\n3 = None (use only empty cells in neighborhood)\n4 = Random from population (Mass Action)\n5 = Oldest in entire population\n6 = Random within deme\n7 = Organism faced by parent\n8 = Next grid cell (id+1)\n9 = Largest energy used in entire population\n10 = Largest energy used in neighborhood\n11 = Local neighborhood dispersal\n12 = Kill offpsring after recording birth stats (for behavioral trials)\n13 = Kill parent and offpsring (for behavioral trials)");
   CONFIG_ADD_VAR(PREFER_EMPTY, int, 1, "Overide BIRTH_METHOD to preferentially choose empty cells for offsping?");
   CONFIG_ADD_VAR(ALLOW_PARENT, int, 1, "Should parents be considered when deciding where to place offspring?");
@@ -446,6 +447,7 @@ public:
   // -------- Parasite options --------
   CONFIG_ADD_GROUP(PARASITE_GROUP, "Parasite config options");
   CONFIG_ADD_VAR(INJECT_METHOD, int, 0, "What should happen to a parasite when it gives birth?\n0 = Leave the parasite thread state untouched.\n1 = Resets the state of the calling thread.\n2 = Kills its host and itself.");
+  CONFIG_ADD_VAR(INJECT_RESET, int, 0, "Should the pointer go back to the first value of the input array when an Inject instruction is executed, or stay at its current value? If 1, the parasite will use the same sequence of input values (taken from the three values of the input array randomly assigned when it was born) after an Inject instruction is executed; that is, phenotypic plasticity will not occur as a result of more than one parasite replication attempt; this parameter only works when PARASITES_USE_OWN_BUFFERS is 1.");
   CONFIG_ADD_VAR(INFECTION_MECHANISM, int, 1, "0: Infection always succeeds. \n1: Infection succeeds if parasite matches at least one host task.\n2: Infection succeeds if parasite does NOT match at least one task.\n3: Parasite tasks must match host tasks exactly (Matching Alleles).\n4: Parasite tasks must overcome hosts (GFG)");
   CONFIG_ADD_VAR(INJECT_QMA_EXPONENT, double, 0.2, "The exponent of the equation proportion_overlap^x that determines the probability of infection succeding given the amount a host and parasite phenotype match.");
   
@@ -644,6 +646,7 @@ public:
   CONFIG_ADD_GROUP(ANALYZE_GROUP, "Analysis Settings");
   CONFIG_ADD_VAR(MAX_CONCURRENCY, int, -1, "Maximum number of analyze threads, -1 == use all available.");
   CONFIG_ADD_VAR(INJECT_RESETS_TASKS, int, 0, "Executing INJECT (semi-succesfully) will trigger last_task_count to be writen from current_task_count");
+  CONFIG_ADD_VAR(PARASITES_USE_OWN_BUFFERS, int, 0, "Should the infected host and its parasite use the same stacks and input buffers (0) or separate ones (1)? If 1, the values of the functions DIVIDE_HOST_RESET and INJECT_RESET will also be used.");
   CONFIG_ADD_VAR(ANALYZE_OPTION_1, cString, "", "String variable accessible from analysis scripts");
   CONFIG_ADD_VAR(ANALYZE_OPTION_2, cString, "", "String variable accessible from analysis scripts");
   
