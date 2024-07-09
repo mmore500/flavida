@@ -5837,7 +5837,7 @@ int cPopulation::FindRandEmptyCell(cAvidaContext& ctx)
     // no need to pop this cell off the array, just move it and don't check that far anymore
     cells.Swap(cell_idx, --world_size);
     // if ran out of cells to check (e.g. with birth chamber weirdness)
-    if (world_size == 1) return -1;
+    if (world_size == 0) return -1;
     cell_idx = ctx.GetRandom().GetUInt(world_size); 
     cell_id = cells[cell_idx];
   }
