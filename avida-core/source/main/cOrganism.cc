@@ -369,14 +369,8 @@ int cOrganism::ReceiveValue()
   return out_value;
 }
 
+// RO: original DoInput and DoOutput methods restored to be used by hardware cpu type different than TRANSSMT
 void cOrganism::DoInput(const int value) {
-    DoInput(m_input_buf, m_output_buf, value);
-}
-
-void cOrganism::DoInput(const int value, Systematics::TransmissionType transmission_type) {
-  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
-    DoInput(m_input_buf_parasites, m_output_buf_parasites, value);
-  else
     DoInput(m_input_buf, m_output_buf, value);
 }
 
@@ -386,7 +380,43 @@ void cOrganism::DoInput(tBuffer<int>& input_buffer, tBuffer<int>& output_buffer,
   m_phenotype.TestInput(input_buffer, output_buffer);
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, const bool on_divide, cContextPhenotype* context_phenotype, Systematics::TransmissionType transmission_type)
+void cOrganism::DoOutput(cAvidaContext& ctx, const bool on_divide, cContextPhenotype* context_phenotype)
+{
+  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, on_divide, false, context_phenotype);
+  else doOutput(ctx, m_input_buf, m_output_buf, on_divide, false, context_phenotype);
+}
+
+void cOrganism::DoOutput(cAvidaContext& ctx, const int value)
+{
+  m_output_buf.Add(value);
+  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, false, false);
+  else doOutput(ctx, m_input_buf, m_output_buf, false, false);
+}
+
+void cOrganism::DoOutput(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype)
+{
+  m_output_buf.Add(value);
+  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf, m_output_buf, false, (bool)is_parasite, context_phenotype);
+  else doOutput(ctx, m_input_buf, m_output_buf, false, (bool)is_parasite, context_phenotype);
+}
+
+void cOrganism::DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value)
+{
+  output_buffer.Add(value);
+  if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, input_buffer, output_buffer, false, false);
+  else doOutput(ctx, input_buffer, output_buffer, false, false);
+}
+
+// RO: renamed specific DoInput and DoOutput methods to be used only by hardware cpu type TRANSSMT.
+//  This ensures they won't be used by other hardware types.
+void cOrganism::DoInputTransSMT(const int value, Systematics::TransmissionType transmission_type) {
+  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+    DoInput(m_input_buf_parasites, m_output_buf_parasites, value);
+  else
+    DoInput(m_input_buf, m_output_buf, value);
+}
+
+void cOrganism::DoOutputTransSMT(cAvidaContext& ctx, const bool on_divide, cContextPhenotype* context_phenotype, Systematics::TransmissionType transmission_type)
 {
   if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
     if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, m_input_buf_parasites, m_output_buf_parasites, on_divide, transmission_type == Systematics::HORIZONTAL, context_phenotype);
@@ -397,7 +427,7 @@ void cOrganism::DoOutput(cAvidaContext& ctx, const bool on_divide, cContextPheno
   }
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, const int value, Systematics::TransmissionType transmission_type)
+void cOrganism::DoOutputTransSMT(cAvidaContext& ctx, const int value, Systematics::TransmissionType transmission_type)
 {
   if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
     m_output_buf_parasites.Add(value);
@@ -410,7 +440,7 @@ void cOrganism::DoOutput(cAvidaContext& ctx, const int value, Systematics::Trans
   }
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype) 
+void cOrganism::DoOutputTransSMT(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype)
 {
   if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite) {
     m_output_buf_parasites.Add(value);
@@ -423,7 +453,7 @@ void cOrganism::DoOutput(cAvidaContext& ctx, const int value, bool is_parasite, 
   }
 }
 
-void cOrganism::DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value, Systematics::TransmissionType transmission_type)
+void cOrganism::DoOutputTransSMT(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value, Systematics::TransmissionType transmission_type)
 {
   output_buffer.Add(value);
   if (m_world->GetConfig().USE_AVATARS.Get()) doAVOutput(ctx, input_buffer, output_buffer, false, transmission_type == Systematics::HORIZONTAL);
@@ -453,7 +483,8 @@ void cOrganism::doOutput(cAvidaContext& ctx,
       m_interface->Rotate(ctx);
       cOrganism * cur_neighbor = m_interface->GetNeighbor();
       if (cur_neighbor == NULL) continue;
-      if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite)
+      //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+      if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite)
         other_input_list.Push( &(cur_neighbor->m_input_buf_parasites) );
       else
         other_input_list.Push( &(cur_neighbor->m_input_buf) );
@@ -572,7 +603,8 @@ void cOrganism::doAVOutput(cAvidaContext& ctx,
       const Apto::Array<cOrganism*>& cur_neighbors = m_interface->GetFacedAVs();
       for (int i = 0; i < cur_neighbors.GetSize(); i++) {
         if (cur_neighbors[i] == NULL) continue;
-        if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite)
+        //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+        if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && is_parasite)
           other_input_list.Push( &(cur_neighbors[i]->m_input_buf_parasites) );
         else
           other_input_list.Push( &(cur_neighbors[i]->m_input_buf) );
@@ -774,7 +806,8 @@ void cOrganism::PrintStatus(ostream& fp, Systematics::TransmissionType transmiss
   
   fp << "Input (env):";
   int buf_capacity;
-  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+  //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+  if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
     buf_capacity = m_input_buf_parasites.GetCapacity();
   else
     buf_capacity = m_input_buf.GetCapacity();
@@ -1008,8 +1041,9 @@ void cOrganism::NewTrial(Systematics::TransmissionType transmission_type)
   GetPhenotype().NewTrial();
   m_input_pointer = 0;
   m_output_buf.Clear();
-  // Reset parasite input pointer and clear parasite input buffer if it has its own buffers
-  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+  // RO: Reset parasite input pointer and clear parasite input buffer if it has its own buffers.
+  // Parasites use their own buffers only when hardware cpu type is TRANSSMT.
+  if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
     m_input_pointer_parasites = 0;
     m_input_buf_parasites.Clear();
   } else

@@ -263,7 +263,8 @@ public:
   }
   int GetNextInput() { return m_interface->GetInputAt(m_input_pointer); }
   int GetNextInput(Systematics::TransmissionType transmission_type) { 
-    if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+    //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+    if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
       return m_interface->GetInputAt(m_input_pointer_parasites);
     else
       return m_interface->GetInputAt(m_input_pointer);
@@ -301,25 +302,31 @@ public:
 
   // --------  Input and Output Methods  --------
   void DoInput(const int value);
-  void DoInput(const int value, Systematics::TransmissionType transmission_type);
   void DoInput(tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value);
+  void DoInputTransSMT(const int value, Systematics::TransmissionType transmission_type);
 
   /* These different flavors of DoOutput are "frontends" to the main DoOutput
   that follows - One DoOutput to rule them all, etc., etc. */
   //! Check tasks based on the current state of this organism's IO & message buffers.
   // void DoOutput(cAvidaContext& ctx, const bool on_divide=false);
-  void DoOutput(cAvidaContext& ctx, const bool on_divide=false, cContextPhenotype* context_phenotype = 0, Systematics::TransmissionType transmission_type = Systematics::UNKNOWN); 
+  void DoOutput(cAvidaContext& ctx, const bool on_divide=false, cContextPhenotype* context_phenotype = 0);
   //! Add the passed-in value to this organism's output buffer, and check tasks (on_divide=false).
-  void DoOutput(cAvidaContext& ctx, const int value, Systematics::TransmissionType transmission_type);
+  void DoOutput(cAvidaContext& ctx, const int value);
   //! Check if we're calling this from a parasite.
   void DoOutput(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype);
   //! Check tasks based on the passed-in IO buffers and value (on_divide=false).
-  void DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value, Systematics::TransmissionType transmission_type);    
+  void DoOutput(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value);
+
+  void DoOutputTransSMT(cAvidaContext& ctx, const bool on_divide=false, cContextPhenotype* context_phenotype = 0, Systematics::TransmissionType transmission_type = Systematics::UNKNOWN);
+  void DoOutputTransSMT(cAvidaContext& ctx, const int value, Systematics::TransmissionType transmission_type);
+  void DoOutputTransSMT(cAvidaContext& ctx, const int value, bool is_parasite, cContextPhenotype* context_phenotype);
+  void DoOutputTransSMT(cAvidaContext& ctx, tBuffer<int>& input_buffer, tBuffer<int>& output_buffer, const int value, Systematics::TransmissionType transmission_type);
 
   void ClearInput() { m_input_buf.Clear(); }
   void ResetInput() { m_input_pointer = 0; m_input_buf.Clear(); };
   void ResetInput(Systematics::TransmissionType transmission_type) {
-    if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+    //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+    if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
       m_input_pointer_parasites = 0;
       m_input_buf_parasites.Clear();
     } else {
@@ -329,14 +336,16 @@ public:
   }
   void AddOutput(int val) { m_output_buf.Add(val); }
   void AddOutput(int val, Systematics::TransmissionType transmission_type) {
-    if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+    //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+    if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
       m_output_buf_parasites.Add(val);
     } else {
       AddOutput(val);
     }
   }
   int GetInputPointer(Systematics::TransmissionType transmission_type) {
-    if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
+    //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+    if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL)
       return m_input_pointer_parasites;
     else
       return m_input_pointer;

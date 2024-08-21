@@ -863,8 +863,9 @@ void cPhenotype::DivideReset(const InstructionSequence& _genome)
   last_num_donates          = cur_num_donates;
   last_task_count           = cur_task_count;
   last_host_tasks           = cur_host_tasks;
-  // RO: do not set tasks when the parasite uses its own buffers
-  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 0) {
+  // RO: do not set tasks when the parasite uses its own buffers.
+  // Parasites use their own buffers only when hardware cpu type is TRANSSMT.
+  if (m_world->GetConfig().HARDWARE_TYPE.Get() != HARDWARE_TYPE_CPU_TRANSSMT || m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 0) {
     last_para_tasks = cur_para_tasks;
   }
   last_internal_task_count  = cur_internal_task_count;
