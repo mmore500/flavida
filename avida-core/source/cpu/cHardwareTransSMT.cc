@@ -1752,12 +1752,12 @@ bool cHardwareTransSMT::Inst_IO(cAvidaContext &ctx)
 
   // Do the "put" component
   const int value_out = Stack(src).Top();
-  m_organism->DoOutput(ctx, value_out, ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL, &m_threads[m_cur_thread].context_phenotype); // Check for tasks compleated.
+  m_organism->DoOutputTransSMT(ctx, value_out, ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL, &m_threads[m_cur_thread].context_phenotype); // Check for tasks compleated.
 
   // Do the "get" component
   const int value_in = m_organism->GetNextInput(ThreadGetOwner()->UnitSource().transmission_type);
   Stack(dst).Push(value_in);
-  m_organism->DoInput(value_in, ThreadGetOwner()->UnitSource().transmission_type);
+  m_organism->DoInputTransSMT(value_in, ThreadGetOwner()->UnitSource().transmission_type);
 
   return true;
 }
