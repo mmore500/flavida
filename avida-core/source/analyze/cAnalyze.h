@@ -296,6 +296,7 @@ private:
   void AnalyzeComplexity(cString cur_string);
   void AnalyzeLineageComplexitySitesN(cString cur_string);
   void AnalyzeFitnessLandscapeTwoSites(cString cur_string);
+  void AnalyzeFitnessLandscapeOneSite(cString cur_string);
   void AnalyzeComplexityTwoSites(cString cur_string);
   void AnalyzeKnockouts(cString cur_string);
   void AnalyzePopComplexity(cString cur_string);
