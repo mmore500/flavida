@@ -9135,6 +9135,7 @@ void cAnalyze::AnalyzeFitnessLandscapeOneSite(cString cur_string)
         for (int mod_inst = 0; mod_inst < num_insts; mod_inst++) {
           fit_land_fp->WriteRaw(cStringUtil::Stringf("# %d: Instruction, site: %d ", mod_inst, site));
         }
+        fit_land_fp->Endl();
         for (int mod_inst = 0; mod_inst < num_insts; mod_inst++) {
             // modify mod_genome at that site
             seq[site].SetOp(mod_inst);
