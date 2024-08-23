@@ -9121,8 +9121,7 @@ void cAnalyze::AnalyzeFitnessLandscapeOneSite(cString cur_string)
         Avida::Output::FilePtr fit_land_fp = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)fl_filename);
         fit_land_fp->WriteComment( "One-site fitness landscape, all possible instructions" );
         fit_land_fp->WriteComment( cStringUtil::Stringf("Site: %d", site) );
-        fit_land_fp->WriteComment( "Rows #- site" );
-        fit_land_fp->WriteComment( "Columns #- instruction" );
+        fit_land_fp->WriteComment( "Rows #- instruction" );
         fit_land_fp->WriteTimeStamp();
         fit_land_fp->Endl();
         // get current instructions at site
