@@ -1178,8 +1178,11 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     for (int i = 0; i < num_mut; i++)
     {
       int site = ctx.GetRandom().GetUInt(injected_code.GetSize());
-
-      injected_code[site] = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
+      Instruction mut_inst = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
+      if(mut_inst.AsString() != "G") {
+        injected_code[site] = mut_inst;
+      }
+      
     }
   }
 
@@ -1201,7 +1204,10 @@ void cHardwareTransSMT::Inject_DoMutations(cAvidaContext &ctx, double mut_multip
     // Actually do the mutations (in reverse sort order)
     for (int i = num_mut - 1; i >= 0; i--)
     {
-      injected_code.Insert(mut_sites[i], m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type));
+      Instruction mut_inst = m_inst_set->GetRandomInstByTransmissionType(ctx, ThreadGetOwner()->UnitSource().transmission_type);
+      if(mut_inst.AsString() != "G") {
+        injected_code.Insert(mut_sites[i], mut_inst);
+      }
     }
   }
 

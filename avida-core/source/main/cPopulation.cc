@@ -1217,15 +1217,21 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   // Per Inject Mutations
   if (per_inject_mut_prob > 0 && totalMutations < maxmut) {
     const unsigned int mut_line = ctx.GetRandom().GetUInt(temp_code.GetSize());
-    temp_code[mut_line] = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
-    totalMutations++;
+    Instruction mut_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
+    if(mut_inst.AsString() != "G") {
+      temp_code[mut_line] = mut_inst;
+      totalMutations++;
+    }
   }
 
   // Per Inject Insertions
   if (per_inject_ins_prob && temp_code.GetSize() < max_genome_size && totalMutations < maxmut) {
     const unsigned int mut_line = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
-    temp_code.Insert(mut_line, m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL));
-    totalMutations++;
+    Instruction mut_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
+     if(mut_inst.AsString() != "G") {
+      temp_code.Insert(mut_line, mut_inst);
+      totalMutations++;
+     }
   }
 
   // Per Inject Deletions
