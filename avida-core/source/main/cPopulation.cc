@@ -1200,7 +1200,7 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
     }
   }
 
-  // Do per inject mutations
+  // RO: Do per inject mutations
   double per_inject_mut_prob = m_world->GetConfig().PER_INJECT_MUT_PROB.Get();
   double per_inject_ins_prob = m_world->GetConfig().PER_INJECT_INS_PROB.Get();
   double per_inject_del_prob = m_world->GetConfig().PER_INJECT_DEL_PROB.Get();
@@ -1214,98 +1214,76 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
 
   InstructionSequence temp_code = injected_code;
   
-    // Divide Mutations (per site)
-  if (per_inject_mut_prob > 0 && totalMutations < maxmut) {
-    int num_mut = ctx.GetRandom().GetRandBinomial(injected_code.GetSize(), 
-                                                  per_inject_mut_prob / mut_multiplier);
-    // If we have lines to mutate...
-    if (num_mut > 0 && totalMutations < maxmut) {
-      for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
-        int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
-        InstructionSequence new_seq;
-        Instruction new_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
-        new_seq.Append(new_inst);
-        temp_code.Replace(site, 1, new_seq);
-        totalMutations++;
-      }
+  // Per Inject Mutations
+  if (ctx.GetRandom().P(per_inject_mut_prob) && totalMutations < maxmut) {
+    const unsigned int mut_line = ctx.GetRandom().GetUInt(temp_code.GetSize());
+    Instruction mut_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
+    while(mut_inst.AsString() == "G") {
+      mut_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
     }
+    temp_code[mut_line] = mut_inst;
+    totalMutations++;
   }
 
-  // Insert Mutations (per site)
-  if (per_inject_ins_prob > 0 && totalMutations < maxmut) {
-    int num_mut = ctx.GetRandom().GetRandBinomial(temp_code.GetSize(), per_inject_ins_prob);
-    
-    // If would make creature too big, insert up to max_genome_size
-    if (num_mut + temp_code.GetSize() > max_genome_size) {
-      num_mut = max_genome_size - temp_code.GetSize();
+  // Per Inject Insertions
+  if (ctx.GetRandom().P(per_inject_ins_prob) && temp_code.GetSize() < max_genome_size && totalMutations < maxmut) {
+    const unsigned int mut_line = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
+    Instruction mut_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
+    while(mut_inst.AsString() == "G") {
+      mut_inst = m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL);
     }
-    
-    // If we have lines to insert...
-    if (num_mut > 0) {
-      cout << temp_code.AsString() << endl;
-      // Build a sorted list of the sites where mutations occured
-      Apto::Array<int> mut_sites(num_mut);
-      for (int i = 0; i < num_mut; i++) mut_sites[i] = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
-      Apto::QSort(mut_sites);
-      
-      // Actually do the mutations (in reverse sort order)
-      for (int i = mut_sites.GetSize() - 1; i >= 0; i--) {
-        temp_code.Insert(mut_sites[i], m_inst_set.GetRandomInstByTransmissionType(ctx, Systematics::HORIZONTAL));
-      }
-      
-      totalMutations += num_mut;
-    }
+    temp_code.Insert(mut_line, mut_inst);
+    totalMutations++;
   }
 
-    // Delete Mutations (per site)
-  if (per_inject_del_prob > 0 && totalMutations < maxmut) {
-    int num_mut = ctx.GetRandom().GetRandBinomial(temp_code.GetSize(), per_inject_del_prob);
-    
-    // If would make creature too small, delete down to min_genome_size
-    if (temp_code.GetSize() - num_mut < min_genome_size) {
-      num_mut = temp_code.GetSize() - min_genome_size;
+  // Per Inject Deletions
+  if (ctx.GetRandom().P(per_inject_del_prob) && temp_code.GetSize() > min_genome_size && totalMutations < maxmut) {
+    const unsigned int mut_line = ctx.GetRandom().GetUInt(temp_code.GetSize());
+    temp_code.Remove(mut_line);
+    totalMutations++;
+  }
+
+  // Per Inject Uniform Mutations
+  if (ctx.GetRandom().P(per_inject_uniform_prob) && totalMutations < maxmut) {
+    int inst_set_size = m_inst_set.GetSize();
+    int mut;
+    int range = 0;
+    Instruction mut_inst = Instruction("G");
+    // Determine range and mutation and avoid "G" instruction
+    while ( ( mut_inst.AsString() == "G" && range == 0 ) || ( mut_inst.AsString() == "G" && range == 2 ) ) {
+      mut = ctx.GetRandom().GetUInt((inst_set_size * 3));
+      if ( mut < inst_set_size ) {
+        range = 0; // point 
+        mut_inst = Instruction(mut);
+      } else if ( mut >= inst_set_size && mut < inst_set_size * 2 ) {
+        range = 1; //delete
+      } else {
+        range = 2; // insert
+        mut_inst = Instruction(mut - inst_set_size * 2);
+      }
     }
-    
-    // If we have lines to delete...
-    for (int i = 0; i < num_mut; i++) {
+    // Mutate
+    if (range == 0) { // point
       int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
-      temp_code.Remove(site);
-    }
-    
-    totalMutations += num_mut;
-  }
-
-  // Uniform Mutations (per site)
-  if (per_inject_uniform_prob > 0 && totalMutations < maxmut) {
-    int num_mut = ctx.GetRandom().GetRandBinomial(temp_code.GetSize(), 
-                                                  per_inject_uniform_prob / mut_multiplier);
-    
-    // If we have lines to mutate...
-    if (num_mut > 0 && totalMutations < maxmut) {
-      for (int i = 0; i < num_mut && totalMutations < maxmut; i++) {
-        int mut = ctx.GetRandom().GetUInt((m_inst_set.GetSize() * 3));
-        if (mut < m_inst_set.GetSize()) { // point
-          if(Instruction(mut).AsString() == "G") continue;
-          int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
-          temp_code[site] = Instruction(mut);
-        } else if (mut >= m_inst_set.GetSize() && mut < m_inst_set.GetSize() * 2) { // delete
-          if (!min_genome_size || min_genome_size < MIN_GENOME_LENGTH) min_genome_size = MIN_GENOME_LENGTH;
-          if (temp_code.GetSize() == min_genome_size) break;
-          int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
-          temp_code.Remove(site);
-        } else { // insert
-          if(Instruction(mut - m_inst_set.GetSize() * 2).AsString() == "G") continue;
-          if (!max_genome_size || max_genome_size > MAX_GENOME_LENGTH) max_genome_size = MAX_GENOME_LENGTH;
-          if (temp_code.GetSize() == max_genome_size) break;
-          int site = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
-          temp_code.Insert(site, Instruction(mut - m_inst_set.GetSize() * 2));
-        }
+      temp_code[site] = mut_inst;
+    } else if (range == 1) { // delete
+      int min_genome_size = m_world->GetConfig().MIN_GENOME_SIZE.Get();
+      if (!min_genome_size || min_genome_size < MIN_GENOME_LENGTH) min_genome_size = MIN_GENOME_LENGTH;
+      if (temp_code.GetSize() != min_genome_size) {
+        int site = ctx.GetRandom().GetUInt(temp_code.GetSize());
+        temp_code.Remove(site);
       }
-      totalMutations += num_mut;
+    } else { // insert
+        int max_genome_size = m_world->GetConfig().MAX_GENOME_SIZE.Get();
+        if (!max_genome_size || max_genome_size > MAX_GENOME_LENGTH) max_genome_size = MAX_GENOME_LENGTH;
+        if (temp_code.GetSize() != max_genome_size) {
+          int site = ctx.GetRandom().GetUInt(temp_code.GetSize() + 1);
+          temp_code.Insert(site, mut_inst);
+        }
     }
+    totalMutations++;
   }
   
-
   // Pull the host cell
   const int host_id = host->GetOrgInterface().GetCellID();
   assert(host_id >= 0 && host_id < cell_array.GetSize());
@@ -1438,12 +1416,9 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   //Handle potential virulence evolution if this parasite is comming from a parasite 
   //and virulence is inhereted from the parent (source == 1)
 
-  if (parent->UnitSource().transmission_type == Systematics::HORIZONTAL && m_world->GetConfig().VIRULENCE_SOURCE.Get() == 1)
+  if (parent->UnitSource().transmission_type == Systematics::HORIZONTAL && m_world->GetConfig().VIRULENCE_SOURCE.Get() == 1 && parent_parasite->UnitGenome().Representation()->AsString() != parasite->UnitGenome().Representation()->AsString())
   {
     //mutate virulence
-    // m_world->GetConfig().PARASITE_VIRULENCE.Get()
-    //Apto::SmartPtr<cParasite, Apto::InternalRCObject> parent_parasite;
-    //parent_parasite.DynamicCastFrom(parent);
     double oldVir = parent_parasite->GetVirulence();
     
     //default to not mutating

@@ -576,26 +576,39 @@ int cHardwareBase::Divide_DoMutations(cAvidaContext& ctx, double mut_multiplier,
 
 bool cHardwareBase::doUniformMutation(cAvidaContext& ctx, InstructionSequence& genome)
 {
-  
-  int mut = ctx.GetRandom().GetUInt((m_inst_set->GetSize() * 3));
-  
-  if (mut < m_inst_set->GetSize()) { // point
-    if(Instruction(mut).AsString() == "F") return false;
+  int inst_set_size = m_inst_set->GetSize();
+  int mut;
+  int range = 0;
+  Instruction mut_inst = Instruction("F");
+  // Determine range and mutation and avoid "F" instruction
+  while ( ( mut_inst.AsString() == "F" && range == 0 ) || ( mut_inst.AsString() == "F" && range == 2 ) ) {
+    mut = ctx.GetRandom().GetUInt((inst_set_size * 3));
+    if ( mut < inst_set_size ) {
+      range = 0; // point
+      mut_inst = Instruction(mut);
+    } else if ( mut >= inst_set_size && mut < inst_set_size * 2 ) {
+      range = 1; //delete
+    } else {
+      range = 2; // insert
+      mut_inst = Instruction(mut - inst_set_size * 2);
+    }
+  }
+  // Mutate
+  if (range == 0) { // point
     int site = ctx.GetRandom().GetUInt(genome.GetSize());
-    genome[site] = Instruction(mut);
-  } else if (mut >= m_inst_set->GetSize() && mut < m_inst_set->GetSize() * 2) { // delete
+    genome[site] = mut_inst;
+  } else if (range == 1) { // delete
     int min_genome_size = m_world->GetConfig().MIN_GENOME_SIZE.Get();
     if (!min_genome_size || min_genome_size < MIN_GENOME_LENGTH) min_genome_size = MIN_GENOME_LENGTH;
     if (genome.GetSize() == min_genome_size) return false;
     int site = ctx.GetRandom().GetUInt(genome.GetSize());
     genome.Remove(site);
   } else { // insert
-    if(Instruction(mut - m_inst_set->GetSize() * 2).AsString() == "F") return false;
     int max_genome_size = m_world->GetConfig().MAX_GENOME_SIZE.Get();
     if (!max_genome_size || max_genome_size > MAX_GENOME_LENGTH) max_genome_size = MAX_GENOME_LENGTH;
     if (genome.GetSize() == max_genome_size) return false;
     int site = ctx.GetRandom().GetUInt(genome.GetSize() + 1);
-    genome.Insert(site, Instruction(mut - m_inst_set->GetSize() * 2));
+    genome.Insert(site, mut_inst);
   }
   
   return true;

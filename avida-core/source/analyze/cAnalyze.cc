@@ -9020,6 +9020,140 @@ void cAnalyze::AnalyzeComplexity(cString cur_string)
   delete testcpu;
 }
 
+void cAnalyze::AnalyzeFitnessLandscapeOneSite(cString cur_string)
+{
+  cout << "Fitness for all instruction combinations at one site..." << endl;
+  
+  /*
+   * Arguments:
+   * 1) directory (default: 'fitness_landscape_one_site/'
+   * 2) useResources (default: 0 -- no)
+   * 3) batchFrequency (default: 1 -- all genotypes in batch)
+   * 
+   */
+  
+  // number of arguments provided  
+  int words = cur_string.CountNumWords();
+  if (m_world->GetVerbosity() >= VERBOSE_ON) {
+    cout << "  Number of arguments passed: " << words << endl;
+  }
+  
+  //
+  // argument 1 -- directory
+  //
+  cString dir = cur_string.PopWord();
+  cString defaultDirectory = "fitness_landscape_one_site/";
+  cString directory = PopDirectory(dir, defaultDirectory);
+  if (m_world->GetVerbosity() >= VERBOSE_ON) {
+    cout << "  - Analysis results to directory: " << directory << endl;
+  }
+
+  //
+  // argument 2 -- use resources?
+  //
+  // Default for usage of resources is false
+  int useResources = 0;
+  if(words >= 2) {
+    useResources = cur_string.PopWord().AsInt();
+    // All non-zero values are considered false (Handled by testcpu->InitResources)
+  }
+  if (m_world->GetVerbosity() >= VERBOSE_ON) {
+    cout << "  - Use resorces set to: " << useResources << " (0=false, true other int)" << endl;
+  }
+  
+  //
+  // argument 3 -- batch frequncy
+  //   - default batchFrequency=1 (every organism analyzed)
+  //
+  int batchFrequency = 1;
+  if(words >= 3) {
+    batchFrequency = cur_string.PopWord().AsInt();
+    if(batchFrequency <= 0) {
+      batchFrequency = 1;
+    }
+  }
+  if (m_world->GetVerbosity() >= VERBOSE_ON) {
+    cout << "  - Batch frequency set to: " << batchFrequency << endl;
+  }
+
+  // test cpu
+  //cTestCPU* testcpu = m_world->GetHardwareManager().CreateTestCPU();
+  
+  // get current batch
+  tListIterator<cAnalyzeGenotype> batch_it(batch[cur_batch].List());
+  cAnalyzeGenotype * genotype = NULL;
+    
+  // analyze each genotype in the batch
+  while ((genotype = batch_it.Next()) != NULL) {
+    if (m_world->GetVerbosity() >= VERBOSE_ON) {
+      cout << "  Analyzing complexity for " << genotype->GetName() << endl;
+    }
+    
+    int updateBorn = -1;
+    updateBorn = genotype->GetUpdateBorn();
+    cCPUTestInfo test_info;
+    test_info.SetResourceOptions(useResources, m_resources, updateBorn, m_resource_time_spent_offset);
+    
+    // Calculate the stats for the genotype we're working with ...
+    genotype->Recalculate(m_ctx, &test_info);
+    const int max_line = genotype->GetLength();
+    
+    const Genome& base_genome = genotype->GetGenome();
+    ConstInstructionSequencePtr base_seq_p;
+    ConstGeneticRepresentationPtr rep_p = base_genome.Representation();
+    base_seq_p.DynamicCastFrom(rep_p);
+    const InstructionSequence& base_seq = *base_seq_p;
+    
+    Genome mod_genome(base_genome);
+    InstructionSequencePtr mod_seq_p;
+    GeneticRepresentationPtr mod_rep_p = mod_genome.Representation();
+    mod_seq_p.DynamicCastFrom(mod_rep_p);
+    InstructionSequence& seq = *mod_seq_p;
+    
+    const int num_insts = m_world->GetHardwareManager().GetInstSet(base_genome.Properties().Get("instset").StringValue()).GetSize();
+
+    // run throught each site in genome
+    for (int site = 0; site < max_line; site++) {
+        
+        // Construct filename for this site combination
+        cString fl_filename;
+        fl_filename.Set("%s%s_FitLand_site-%d.dat", static_cast<const char*>(directory), static_cast<const char*>(genotype->GetName()), site);
+        Avida::Output::FilePtr fit_land_fp = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)fl_filename);
+        fit_land_fp->WriteComment( "One-site fitness landscape, all possible instructions" );
+        fit_land_fp->WriteComment( cStringUtil::Stringf("Site: %d", site) );
+        fit_land_fp->WriteComment( "Rows #- instruction" );
+        fit_land_fp->WriteTimeStamp();
+        fit_land_fp->Endl();
+        // get current instructions at site
+        int curr_inst = base_seq[site].GetOp();
+      
+        // get current fitness
+        //double curr_fitness = genotype->GetFitness();
+        
+        // run through all possible instruction
+        // at one site
+        for (int mod_inst = 0; mod_inst < num_insts; mod_inst++) {
+          fit_land_fp->WriteRaw(cStringUtil::Stringf("# %d: Instruction, site: %d ", mod_inst, site));
+        }
+        fit_land_fp->Endl();
+        for (int mod_inst = 0; mod_inst < num_insts; mod_inst++) {
+            // modify mod_genome at that site
+            seq[site].SetOp(mod_inst);
+            // analyze mod_genome
+            cAnalyzeGenotype test_genotype(m_world, mod_genome);
+            test_genotype.Recalculate(m_ctx);
+            double mod_fitness = test_genotype.GetFitness();
+            // write to file
+            //fit_land_fp->Write(mod_fitness, cStringUtil::Stringf("Instruction, site: %d ", mod_inst));
+            fit_land_fp->WriteAnonymous(mod_fitness);
+          fit_land_fp->Endl();
+        }   
+        // Reset the mod_genome back to the original sequence.
+        seq[site].SetOp(curr_inst);
+    }
+  }  
+}
+
 void cAnalyze::AnalyzeFitnessLandscapeTwoSites(cString cur_string)
 {
   cout << "Fitness for all instruction combinations at two sites..." << endl;
@@ -11315,6 +11449,7 @@ void cAnalyze::SetupCommandDefLibrary()
   AddLibraryDef("ANALYZE_COMPLEXITY", &cAnalyze::AnalyzeComplexity);
   AddLibraryDef("ANALYZE_LINEAGE_COMPLEXITY", &cAnalyze::AnalyzeLineageComplexitySitesN);
   AddLibraryDef("ANALYZE_FITNESS_TWO_SITES", &cAnalyze::AnalyzeFitnessLandscapeTwoSites);
+  AddLibraryDef("ANALYZE_FITNESS_ONE_SITE", &cAnalyze::AnalyzeFitnessLandscapeOneSite);
   AddLibraryDef("ANALYZE_COMPLEXITY_TWO_SITES", &cAnalyze::AnalyzeComplexityTwoSites);
   AddLibraryDef("ANALYZE_KNOCKOUTS", &cAnalyze::AnalyzeKnockouts);
   AddLibraryDef("GET_SKELETONS", &cAnalyze::GetSkeletons_Batch);
