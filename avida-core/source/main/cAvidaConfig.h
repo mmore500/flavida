@@ -458,9 +458,9 @@ public:
   CONFIG_ADD_VAR(INJECT_DEFAULT_SUCCESS, double, 0.0, "If injection is task specific, with what probability should non-matching parasites infect the host ");
   CONFIG_ADD_VAR(PARASITE_VIRULENCE, double, -1, "The probabalistic percentage of cpu cycles allocated to the parasite instead of the host. Ensure INJECT_IS_VIRULENT is set to 0. This only works for single infection at the moment. Note that this should be set to a default even if virulence is evolving.");
   CONFIG_ADD_VAR(VIRULENCE_SOURCE, int, 0, "Virulence is set by config (0) or inhereted from parent (1) or host-controlled, i.e. donation (2)");
-  CONFIG_ADD_VAR(VIRULENCE_MUT_RATE, double, 0.1, "The probability that virulence will mutate if it is inhereted from the parent or host-controlled (VIRULENCE_SOURCE = 1 & 2)");
+  CONFIG_ADD_VAR(VIRULENCE_HERITABLE, bool, 0, "When this option is set to 0, the probability of changing a parasite virulence applies everytime a new parasite is born; in contrast, when it is set to 1,  the probability of changing a parasite virulence applies everytime a new mutant parasite is born (this option is applied only if VIRULENCE_SOURCE is set to 1)");
+  CONFIG_ADD_VAR(VIRULENCE_MUT_RATE, double, 0.1, "It controls the probability of mutating a parasites virulence when a new parasite is born (if VIRULENCE_HERITABLE is set to 0) or when a new mutant parasite is born (if VIRULENCE_HERITABLE is set to 1); in both cases, it applies only if VIRULENCE_SOURCE is set to 1)");
   CONFIG_ADD_VAR(VIRULENCE_SD, double, 0.1, "New Virulence will be drawn from a normal distribution centered on the parental virulence, with this standard deviation");
-
 
   CONFIG_ADD_VAR(PARASITE_MEM_SPACES, int, 1, "Parasites get their own memory spaces");
   CONFIG_ADD_VAR(PARASITE_NO_COPY_MUT, int, 0, "Parasites do not get copy mutation rates");

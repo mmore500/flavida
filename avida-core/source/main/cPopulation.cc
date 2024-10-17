@@ -1416,7 +1416,7 @@ bool cPopulation::ActivateParasite(cOrganism* host, Systematics::UnitPtr parent,
   //Handle potential virulence evolution if this parasite is comming from a parasite 
   //and virulence is inhereted from the parent (source == 1)
 
-  if (parent->UnitSource().transmission_type == Systematics::HORIZONTAL && m_world->GetConfig().VIRULENCE_SOURCE.Get() == 1 && parent_parasite->UnitGenome().Representation()->AsString() != parasite->UnitGenome().Representation()->AsString())
+  if (parent->UnitSource().transmission_type == Systematics::HORIZONTAL && m_world->GetConfig().VIRULENCE_SOURCE.Get() == 1 && (m_world->GetConfig().VIRULENCE_HERITABLE.Get() == 0 || (m_world->GetConfig().VIRULENCE_HERITABLE.Get() == 1 && parent_parasite->UnitGenome().Representation()->AsString() != parasite->UnitGenome().Representation()->AsString())))
   {
     //mutate virulence
     double oldVir = parent_parasite->GetVirulence();
