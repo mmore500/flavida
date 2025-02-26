@@ -376,6 +376,7 @@ public:
   CONFIG_ADD_VAR(ALLOW_PARENT, int, 1, "Should parents be considered when deciding where to place offspring?");
   CONFIG_ADD_VAR(DISPERSAL_RATE, double, 0.0, "Rate of dispersal under birth method 11\n(poisson distributed random connection list hops)");
   CONFIG_ADD_VAR(DEATH_PROB, double, 0.0, "Probability for an organism to die per update (it applies to all organisms, regardless of their age).");
+  CONFIG_ADD_VAR(RELEASE_TAKEN_RESOURCES_WASHOUT, int, 0, "If set to 1, organisms will release to the global pool the resources they have taken if they die (by DEATH_PROB) before dividing, assuming that washed-out organisms in a chemostat do not consume resources.");
   CONFIG_ADD_VAR(DEATH_METHOD, int, 2, "When should death by old age occur?\n0 = Never\n1 = When executed AGE_LIMIT (+deviation) total instructions\n2 = When executed genome_length * AGE_LIMIT (+dev) instructions");
   CONFIG_ADD_VAR(AGE_LIMIT, int, 20, "See DEATH_METHOD");
   CONFIG_ADD_VAR(AGE_DEVIATION, int, 0, "Creates a normal distribution around AGE_LIMIT for time of death");
