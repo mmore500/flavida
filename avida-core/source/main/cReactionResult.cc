@@ -197,6 +197,11 @@ double cReactionResult::GetConsumed(int id)
   return resources_consumed[id];
 }
 
+// RO: Release resources to the global pool before killing by DEATH_PROB
+double cReactionResult::QueryConsumed(int id)
+{
+  return resources_consumed[id];
+}
 
 double cReactionResult::GetProduced(int id)
 {

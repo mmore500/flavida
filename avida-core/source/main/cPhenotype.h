@@ -757,6 +757,9 @@ public:
   struct PhenotypeCompare {
     bool operator()(const cPhenotype* lhs, const cPhenotype* rhs) const;
   };
+
+  // RO: Release resources to the global pool before killing by DEATH_PROB
+  cReactionResult* GetReactionResult() { assert(initialized == true); return m_reaction_result; };
 };
 
 

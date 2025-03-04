@@ -112,6 +112,11 @@ public:
   double GetMultDemeBonus() { return deme_mult_bonus; }
   double GetAddGermline() { return germline_add; }
   double GetMultGermline() { return germline_mult; }
+
+  // RO: Release resources to the global pool before killing by DEATH_PROB
+  double QueryConsumed(int id);
+  int GetConsumedSize() const { return resources_consumed.GetSize(); }
+  void Reset() { resources_consumed.SetAll(0.0); }
 };
 
 #endif

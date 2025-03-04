@@ -697,6 +697,13 @@ void cResourceCount::Set(cAvidaContext& ctx, int res_id, double new_level)
   }
 }
 
+// RO: Release resources to the global pool before killing by DEATH_PROB
+void cResourceCount::Release(cAvidaContext& ctx, int res_id, double units_released)
+{
+  assert(res_id < resource_count.GetSize());
+  resource_count[res_id] += units_released;
+}
+
 void cResourceCount::ResizeSpatialGrids(int in_x, int in_y)
 {
   for (int i = 0; i < resource_count.GetSize(); i++) {

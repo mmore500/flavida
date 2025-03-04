@@ -62,6 +62,7 @@
 #include "cTestCPU.h"
 #include "cTopology.h"
 #include "cWorld.h"
+#include "cReactionResult.h"
 
 #include "cHardwareCPU.h"
 
@@ -6408,10 +6409,38 @@ void cPopulation::ProcessPostUpdate(cAvidaContext& ctx)
 void cPopulation::ProcessUpdateCellActions(cAvidaContext& ctx)
 {
   for (int i = 0; i < cell_array.GetSize(); i++) {
-    if (cell_array[i].MutationRates().TestDeath(ctx)) KillOrganism(cell_array[i], ctx); 
+    if (cell_array[i].MutationRates().TestDeath(ctx)) {
+      // RO: Release resources to the global pool before killing by DEATH_PROB
+      if(m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get() == 1 && (cell_array[i].IsOccupied() == true)) {
+        
+        // Get reaction result for current organism
+        cOrganism* organism = cell_array[i].GetOrganism();
+        cPhenotype& phenotype = organism->GetPhenotype();  
+        cReactionResult* result = phenotype.GetReactionResult();
+
+        // Search consumed resources in reactions
+        if (result != nullptr) {
+        cResourceCount& glogbal_resource_count = m_world->GetPopulation().GetResourceCount();
+
+          // Get consumed resources
+          for (int i = 0; i < result->GetConsumedSize(); ++i) {
+            double consumed = result->QueryConsumed(i);
+             for (int res_id = 0; res_id < glogbal_resource_count.GetSize(); ++res_id) {
+              if (res_id == i) {
+                  // Release consumed
+                  glogbal_resource_count.Release(ctx, res_id, consumed);
+                  break;
+              }
+            }
+          }
+        }
+      }
+
+      // Kill the organism
+      KillOrganism(cell_array[i], ctx);
+    } 
   }
 }
-
 
 struct sOrgInfo {
   int cell_id;
