@@ -428,6 +428,11 @@ public:
   double GetInjectDelProb() const { return m_mut_rates.GetInjectDelProb(); }
   double GetInjectMutProb() const { return m_mut_rates.GetInjectMutProb(); }
 
+  double GetPerInjectInsProb() const { return m_mut_rates.GetPerInjectInsProb(); }
+  double GetPerInjectDelProb() const { return m_mut_rates.GetPerInjectDelProb(); }
+  double GetPerInjectMutProb() const { return m_mut_rates.GetPerInjectMutProb(); }
+  double GetPerInjectUniformProb() const { return m_mut_rates.GetPerInjectUniformProb(); }
+
   // --------  Configuration Convenience Methods  --------
   bool GetTestOnDivide() const;
   int GetSterilizeUnstable() const;

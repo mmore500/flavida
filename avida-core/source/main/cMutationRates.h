@@ -98,6 +98,15 @@ private:
   };
   sUpdateMuts update;
 
+  // per inject...
+  struct sPerInjectMuts {
+    double mut_prob;
+    double ins_prob;
+    double del_prob;
+    double uniform_prob;
+  };
+  sPerInjectMuts per_inject;
+
 public:
   cMutationRates() { Clear(); }
   cMutationRates(const cMutationRates& in_muts) { Copy(in_muts); }
@@ -200,6 +209,10 @@ public:
   
   double GetDeathProb() const         { return update.death_prob; }
 
+  double GetPerInjectMutProb() const { return per_inject.mut_prob; }
+  double GetPerInjectInsProb() const { return per_inject.ins_prob; }
+  double GetPerInjectDelProb() const { return per_inject.del_prob; }
+  double GetPerInjectUniformProb() const { return per_inject.uniform_prob; }
   
   void SetCopyMutProb(double in_prob)       { copy.mut_prob = in_prob; }
   void SetCopyInsProb(double in_prob)       { copy.ins_prob = in_prob; }
@@ -239,6 +252,11 @@ public:
   void SetMetaStandardDev(double in_dev)    { meta.standard_dev     = in_dev; }
 
   void SetDeathProb(double in_prob)         { update.death_prob      = in_prob; }
+
+  void SetPerInjectMutProb(double in_prob) { per_inject.mut_prob = in_prob; }
+  void SetPerInjectInsProb(double in_prob) { per_inject.ins_prob = in_prob; }
+  void SetPerInjectDelProb(double in_prob) { per_inject.del_prob = in_prob; }
+  void SetPerInjectUniformProb(double in_prob) { per_inject.uniform_prob = in_prob; }
 };
 
 #endif

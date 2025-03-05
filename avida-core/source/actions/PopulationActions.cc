@@ -1882,7 +1882,8 @@ private:
     DS_MUT, DS_INS, DS_DEL, DS_UNIFORM, DS_SLIP,
     D1_MUT, D1_INS, D1_DEL, D1_UNIFORM, D1_SLIP,
     P_MUT, P_INS, P_DEL, DEATH, PNT_MUT, PNT_INS, PNT_DEL,
-    I_MUT, I_INS, I_DEL
+    I_MUT, I_INS, I_DEL,
+    P_I_MUT, P_I_INS, P_I_DEL, P_I_UNIFORM
   } m_mut_type;
   
   double m_prob;
@@ -1932,6 +1933,11 @@ public:
     else if (mutstr == "INJECT_MUT") m_mut_type = I_MUT;
     else if (mutstr == "INJECT_INS") m_mut_type = I_INS;
     else if (mutstr == "INJECT_DEL") m_mut_type = I_DEL;
+
+    else if (mutstr == "PER_INJECT_MUT") m_mut_type = P_I_MUT;
+    else if (mutstr == "PER_INJECT_INS") m_mut_type = P_I_INS;
+    else if (mutstr == "PER_INJECT_DEL") m_mut_type = P_I_DEL;
+    else if (mutstr == "PER_INJECT_UNIFORM") m_mut_type = P_I_UNIFORM;
     
     
     if (m_start < 0) { // start == -1  -->  all
@@ -1984,6 +1990,11 @@ public:
         case I_MUT: m_world->GetConfig().INJECT_MUT_PROB.Set(m_prob); break;
         case I_INS: m_world->GetConfig().INJECT_INS_PROB.Set(m_prob); break;
         case I_DEL: m_world->GetConfig().INJECT_DEL_PROB.Set(m_prob); break;
+
+        case P_I_MUT: m_world->GetConfig().PER_INJECT_MUT_PROB.Set(m_prob); break;
+        case P_I_INS: m_world->GetConfig().PER_INJECT_INS_PROB.Set(m_prob); break;
+        case P_I_DEL: m_world->GetConfig().PER_INJECT_DEL_PROB.Set(m_prob); break;
+        case P_I_UNIFORM: m_world->GetConfig().PER_INJECT_UNIFORM_PROB.Set(m_prob); break;
         default:
           return;
       }
@@ -2019,6 +2030,11 @@ public:
       case I_MUT: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetInjectMutProb(m_prob); break;
       case I_INS: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetInjectInsProb(m_prob); break;
       case I_DEL: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetInjectDelProb(m_prob); break;
+
+      case P_I_MUT: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectMutProb(m_prob); break;
+      case P_I_INS: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectInsProb(m_prob); break;
+      case P_I_DEL: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectDelProb(m_prob); break;
+      case P_I_UNIFORM: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectUniformProb(m_prob); break;
       default:
         return;
     }
@@ -2034,7 +2050,8 @@ private:
     DS_MUT, DS_INS, DS_DEL, DS_UNIFORM, DS_SLIP,
     D1_MUT, D1_INS, D1_DEL, D1_UNIFORM, D1_SLIP,
     P_MUT, P_INS, P_DEL, DEATH, PNT_MUT, PNT_INS, PNT_DEL,
-    I_MUT, I_INS, I_DEL
+    I_MUT, I_INS, I_DEL,
+    P_I_MUT, P_I_INS, P_I_DEL, P_I_UNIFORM
   } m_mut_type;
   
   double m_prob;
@@ -2084,6 +2101,11 @@ public:
     else if (mutstr == "INJECT_INS") m_mut_type = I_INS;
     else if (mutstr == "INJECT_DEL") m_mut_type = I_DEL;
     
+    else if (mutstr == "PER_INJECT_MUT") m_mut_type = P_I_MUT;
+    else if (mutstr == "PER_INJECT_INS") m_mut_type = P_I_INS;
+    else if (mutstr == "PER_INJECT_DEL") m_mut_type = P_I_DEL;
+    else if (mutstr == "PER_INJECT_UNIFORM") m_mut_type = P_I_UNIFORM;
+
     if (m_start < 0) { // start == -1  -->  all
       m_setconf = true;
       m_start = 0;
@@ -2135,6 +2157,11 @@ public:
       case I_MUT: prob += m_world->GetConfig().INJECT_MUT_PROB.Get(); break;
       case I_INS: prob += m_world->GetConfig().INJECT_INS_PROB.Get(); break;
       case I_DEL: prob += m_world->GetConfig().INJECT_DEL_PROB.Get(); break;
+
+      case P_I_MUT: prob += m_world->GetConfig().PER_INJECT_MUT_PROB.Get(); break;
+      case P_I_INS: prob += m_world->GetConfig().PER_INJECT_INS_PROB.Get(); break;
+      case P_I_DEL: prob += m_world->GetConfig().PER_INJECT_DEL_PROB.Get(); break;    
+      case P_I_UNIFORM: prob += m_world->GetConfig().PER_INJECT_UNIFORM_PROB.Get(); break; 
       default:
         return;
     }
@@ -2171,6 +2198,11 @@ public:
         case I_MUT: m_world->GetConfig().INJECT_MUT_PROB.Set(prob); break;
         case I_INS: m_world->GetConfig().INJECT_INS_PROB.Set(prob); break;
         case I_DEL: m_world->GetConfig().INJECT_DEL_PROB.Set(prob); break;
+
+        case P_I_MUT: m_world->GetConfig().PER_INJECT_MUT_PROB.Set(prob); break;
+        case P_I_INS: m_world->GetConfig().PER_INJECT_INS_PROB.Set(prob); break;
+        case P_I_DEL: m_world->GetConfig().PER_INJECT_DEL_PROB.Set(prob); break;
+        case P_I_UNIFORM: m_world->GetConfig().PER_INJECT_UNIFORM_PROB.Set(prob); break;
         default:
           return;
       }
@@ -2206,6 +2238,12 @@ public:
       case I_MUT: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetInjectMutProb(prob); break;
       case I_INS: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetInjectInsProb(prob); break;
       case I_DEL: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetInjectDelProb(prob); break;
+
+      case P_I_MUT: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectMutProb(prob); break;
+      case P_I_INS: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectInsProb(prob); break;
+      case P_I_DEL: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectDelProb(prob); break;
+      case P_I_UNIFORM: for (int i = m_start; i < m_end; i++) m_world->GetPopulation().GetCell(i).MutationRates().SetPerInjectUniformProb(prob); break;
+
       default:
         return;
     }
