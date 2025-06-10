@@ -36,6 +36,8 @@
 #include "cTestCPU.h"
 #include "cInstSet.h"
 
+#include "cReactionResult.h"
+
 #include <cassert>
 #include <algorithm>
 #include <iterator>
@@ -448,6 +450,39 @@ void cPopulationInterface::UpdateDemeResources(cAvidaContext& ctx, const Apto::A
 void cPopulationInterface::Die(cAvidaContext& ctx) 
 {
   cPopulationCell & cell = m_world->GetPopulation().GetCell(m_cell_id);
+
+  // RO: Release resources to the global pool before the death of the organism by DEATH_METHOD
+  if(m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get() == 1 && (cell.IsOccupied() == true)) {
+    // Get organism and its phenotype
+    cOrganism* organism = cell.GetOrganism();
+    cPhenotype& phenotype = organism->GetPhenotype();
+
+    // Check whether the organism's age limit has been exceeded
+    const int max_executed = organism->GetMaxExecuted();
+    if ((max_executed > 0 && phenotype.GetTimeUsed() >= max_executed))
+    {
+      // Get reaction result for current organism
+      cReactionResult* result = phenotype.GetReactionResult();
+
+      // Search consumed resources in reactions
+      if (result != nullptr) {
+      cResourceCount& global_resource_count = m_world->GetPopulation().GetResourceCount();
+
+        // Get consumed resources
+        for (int i = 0; i < result->GetConsumedSize(); ++i) {
+          double consumed = result->QueryConsumed(i);
+          for (int res_id = 0; res_id < global_resource_count.GetSize(); ++res_id) {
+            if (res_id == i) {
+                // Release consumed
+                global_resource_count.Release(ctx, res_id, consumed);
+                break;
+            }
+          }
+        }
+      }
+    }
+  }
+
   m_world->GetPopulation().KillOrganism(cell, ctx);
 }
 
