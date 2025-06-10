@@ -180,7 +180,8 @@ enum eVerbosity {
   VERBOSE_NORMAL,       // 1: Notification at start of commands.
   VERBOSE_ON,           // 2: Verbose output, detailing progress
   VERBOSE_DETAILS,      // 3: High level of details, as available.
-  VERBOSE_DEBUG         // 4: Print Debug Information, as applicable.
+  VERBOSE_DEBUG,        // 4: Print Debug Information, as applicable.
+  VERBOSE_DEBUG_MORE    // 5: Instruction-by-instruction execution flow, showing performed tasks and reactions.
 };
 
 
