@@ -246,6 +246,9 @@ public:
   bool DoCollect(cAvidaContext& ctx, bool env_remove, bool internal_add, bool probabilistic, bool unit);
   bool DoActualCollect(cAvidaContext& ctx, int bin_used, bool env_remove, bool internal_add, bool probabilistic, bool unit);
 
+  // RO: Print debug info before executing current instruction
+  void TraceMore();
+
 private:
   // ---------- Instruction Library -----------
 

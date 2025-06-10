@@ -204,6 +204,175 @@ Systematics::UnitPtr cHardwareTransSMT::ThreadGetOwner()
   return (m_threads[m_cur_thread].owner) ? m_threads[m_cur_thread].owner : orgp;
 }
 
+// RO: Print debug info before executing current instruction
+void cHardwareTransSMT::TraceMore() {
+  // Do not print output for TestCPU
+  if (m_organism->GetCellID() == -1) return;
+
+  // Get current instruction
+  const Instruction cur_inst = IP().GetInst();
+
+  // Get phenotype
+  cPhenotype& hostPhenotype = m_organism->GetPhenotype();
+
+  // Define data vars
+  tBuffer<int> input_buffer(0);
+  tBuffer<int> output_buffer(0);
+  int input_offset;
+  int output_offset;
+  Systematics::TransmissionType  transmission_type;
+
+  if(m_cur_thread == 1) {
+    // Get inputs and buffers for parasite
+    cout << "P";
+    if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get()) {
+      input_buffer = m_organism->GetInputBufParasites();
+      input_offset = m_organism->GetInputBufferOffsetParasites();
+      output_buffer = m_organism->GetOutputBufParasites();
+      output_offset = m_organism->GetOutputtBufferOffsetParasites();
+    } else {
+      input_buffer = m_organism->GetInputBuf();
+      input_offset = m_organism->GetInputBufferOffset();
+      output_buffer = m_organism->GetOutputBuf();
+      output_offset = m_organism->GetOutputBufferOffset();
+    }
+    transmission_type = Systematics::HORIZONTAL;
+  } else {
+    // Get inputs and buffers for hosts
+    cout << "H";
+    input_buffer = m_organism->GetInputBuf();
+    input_offset = m_organism->GetInputBufferOffset();
+    output_buffer = m_organism->GetOutputBuf();
+    output_offset = m_organism->GetOutputBufferOffset();
+    transmission_type = Systematics::DIVISION;
+  }
+    cout << " " << m_organism->GetID();
+    cout << " " << cur_inst.AsString();
+
+    // Get taks and reaction count vars
+    Apto::Array<int> last_tasks = hostPhenotype.GetLastTaskCount();
+    Apto::Array<int> cur_tasks = hostPhenotype.GetCurTaskCount();
+    Apto::Array<int> eff_tasks = hostPhenotype.GetEffTaskCount();
+    Apto::Array<int> last_reaction = hostPhenotype.GetLastReactionCount();
+    Apto::Array<int> cur_reaction = hostPhenotype.GetCurReactionCount();
+
+    Apto::Array<int> host_last_tasks = hostPhenotype.GetLastHostTaskCount();
+    Apto::Array<int> host_cur_tasks = hostPhenotype.GetCurHostTaskCount();
+
+    Apto::Array<int> para_last_tasks = hostPhenotype.GetLastParasiteTaskCount();
+    Apto::Array<int> para_cur_tasks = hostPhenotype.GetCurParasiteTaskCount();
+
+    // Print last_task_count
+    if(last_tasks.GetSize() > 0) {
+      cout << " l_t: ";
+      for (int i = 0; i < last_tasks.GetSize(); i++) {
+        std::cout << "." <<  last_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print current task count
+    if(cur_tasks.GetSize() > 0) {
+      cout << " c_t: ";
+      for (int i = 0; i < cur_tasks.GetSize(); i++) {
+        std::cout << "." <<  cur_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print effective task count
+    if(eff_tasks.GetSize() > 0) {
+      cout << " eff_t: ";
+      for (int i = 0; i < eff_tasks.GetSize(); i++) {
+        std::cout << "." <<  eff_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print last reaction count
+    if(last_reaction.GetSize() > 0) {
+      cout << " l_r: ";
+      for (int i = 0; i < last_reaction.GetSize(); i++) {
+        std::cout << "." <<  last_reaction[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print current reaction count
+    if(cur_reaction.GetSize() > 0) {
+      cout << " c_r: ";
+      for (int i = 0; i < cur_reaction.GetSize(); i++) {
+        std::cout << "." <<  cur_reaction[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print last task count (only hosts)
+    if(host_last_tasks.GetSize() > 0) {
+      cout << " h_l_t: ";
+      for (int i = 0; i < host_last_tasks.GetSize(); i++) {
+        std::cout << "." <<  host_last_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print current task count (only hosts)
+    if(host_cur_tasks.GetSize() > 0) {
+      cout << " h_c_t: ";
+      for (int i = 0; i < host_cur_tasks.GetSize(); i++) {
+        std::cout << "." <<  host_cur_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print last task count (only parasites)
+    if(para_last_tasks.GetSize() > 0) {
+      cout << " p_l_t: ";
+      for (int i = 0; i < para_last_tasks.GetSize(); i++) {
+        std::cout << "." <<  para_last_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print last current count (only hosts)
+    if(para_cur_tasks.GetSize() > 0) {
+      cout << " p_c_t: ";
+      for (int i = 0; i < para_cur_tasks.GetSize(); i++) {
+        std::cout << "." <<  para_cur_tasks[i];
+      }
+      std::cout << ".";
+    }
+
+    // Print inputs pointer
+    cout << " in:";
+    for(int i=0; i < 3; i++)
+      cout << " " << m_organism->GetInputAtPointer(i);
+    cout << " ptr: " << m_organism->GetInputPointer(transmission_type);
+
+    // Print input buffer
+    cout << " in_b";
+    for(int i=0; i < input_buffer.GetNumStored(); i++)
+      cout << " " << input_buffer[i];
+
+    // Print input offset
+    cout << " off: " << input_offset;
+
+    // Print output bufer
+    cout << " ou_b";
+    for(int i=0; i < output_buffer.GetNumStored(); i++)
+      cout << " " << output_buffer[i];
+
+    // Print output offset
+    cout << " off: " << output_offset;
+
+    // Print stacks
+    cout << " stacks:";
+    for(int i = 0; i < NUM_STACKS; i++)
+      cout << " " << Stack(i).Peek();
+
+    cout << endl;
+}
+
 // This function processes the very next command in the genome, and is made
 // to be as optimized as possible.  This is the heart of avida.
 bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
@@ -297,7 +466,11 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
         exec = !(ctx.GetRandom().P(m_inst_set->GetProbFail(cur_inst)));
       }
 
-      if (exec == true)
+      if (exec == true) {
+        // RO: Print debug info before executing current instruction
+        if(m_world->GetConfig().VERBOSITY.Get() == 5)
+          TraceMore();
+
         if (SingleProcess_ExecuteInst(ctx, cur_inst))
         {
           SingleProcess_PayPostResCosts(ctx, cur_inst);
@@ -314,6 +487,7 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
             thisParasite->GetPhenotype().IncTimeUsed();
           }
         }
+      }
 
       // Some instruction (such as jump) may turn advance_ip off.  Ususally
       // we now want to move to the next instruction in the memory.
