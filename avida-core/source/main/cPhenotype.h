@@ -429,6 +429,7 @@ public:
   const Apto::Array<int>& GetCurHostTaskCount() const { assert(initialized == true); return cur_host_tasks; }
   const Apto::Array<int>& GetCurParasiteTaskCount() const { assert(initialized == true); return cur_para_tasks; }
   const Apto::Array<int>& GetCurInternalTaskCount() const { assert(initialized == true); return cur_internal_task_count; }
+  const Apto::Array<int>& GetEffTaskCount() const { assert(initialized == true); return eff_task_count; }
   void ClearEffTaskCount() { assert(initialized == true); eff_task_count.SetAll(0); }
   const Apto::Array<double> & GetCurTaskQuality() const { assert(initialized == true); return cur_task_quality; }
   const Apto::Array<double> & GetCurTaskValue() const { assert(initialized == true); return cur_task_value; }
