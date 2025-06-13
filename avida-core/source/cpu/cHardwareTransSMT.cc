@@ -256,6 +256,8 @@ void cHardwareTransSMT::TraceMore() {
     Apto::Array<int> last_reaction = hostPhenotype.GetLastReactionCount();
     Apto::Array<int> cur_reaction = hostPhenotype.GetCurReactionCount();
 
+    cResourceCount* res_count = m_organism->GetOrgInterface().GetResourceCount();
+
     Apto::Array<int> host_last_tasks = hostPhenotype.GetLastHostTaskCount();
     Apto::Array<int> host_cur_tasks = hostPhenotype.GetCurHostTaskCount();
 
@@ -306,6 +308,15 @@ void cHardwareTransSMT::TraceMore() {
       }
       std::cout << ".";
     }
+
+    // Print global resources
+    if (res_count->ReadResources().GetSize() > 0) {
+      std::cout << " g_r: ";
+      for(int i = 0; i < res_count->ReadResources().GetSize(); i++) {
+        std::cout << "[" << res_count->ReadResources()[i] << "]";
+      }
+    }
+
 
     // Print last task count (only hosts)
     if(host_last_tasks.GetSize() > 0) {

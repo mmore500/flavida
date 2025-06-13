@@ -241,6 +241,9 @@ public:
   static tInstLib<tMethod>* GetInstLib() { return s_inst_slib; }
   static cString GetDefaultInstFilename() { return "instset-heads.cfg"; }
 
+  // RO: Print debug info before executing current instruction
+  void TraceMore();
+  
   bool SingleProcess(cAvidaContext& ctx, bool speculative = false);
   void ProcessBonusInst(cAvidaContext& ctx, const Instruction& inst);
 
