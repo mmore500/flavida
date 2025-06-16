@@ -1546,15 +1546,17 @@ bool cPhenotype::TestOutput(cAvidaContext& ctx, cTaskContext& taskctx,
     }
 
     if (result.TaskDone(i) == true) {
-      cur_task_count[i]++;
-      eff_task_count[i]++;
-      
       // Update parasite/host task tracking appropriately
       if (is_parasite) {
         cur_para_tasks[i]++;
-      }
-      else {
+        if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 0) {
+          cur_task_count[i]++;
+          eff_task_count[i]++;
+        }
+      } else {
         cur_host_tasks[i]++;
+        cur_task_count[i]++;
+        eff_task_count[i]++;
       }
       
       if (context_phenotype != 0) {
