@@ -697,7 +697,7 @@ void cResourceCount::Set(cAvidaContext& ctx, int res_id, double new_level)
   }
 }
 
-// RO: Release resources to the global pool before killing by DEATH_PROB
+// RO: Release resources to the global pool before death
 void cResourceCount::Release(cAvidaContext& ctx, int res_id, double units_released)
 {
   assert(res_id < resource_count.GetSize());

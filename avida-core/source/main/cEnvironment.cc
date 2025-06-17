@@ -1719,7 +1719,8 @@ void cEnvironment::DoProcesses(cAvidaContext& ctx, const tList<cReactionProcess>
 
       // Mark in the results the resource consumed.
 			if (cur_process->GetDepletable()) {
-      	result.Consume(res_id, consumed, !using_rbins);
+        result.Consume(res_id, consumed, !using_rbins);
+        result.SetLastconsumed(res_id, consumed);
       }
     }
 

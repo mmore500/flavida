@@ -1059,9 +1059,9 @@ void cPhenotype::DivideReset(const InstructionSequence& _genome)
   for (Apto::Map<void*, cTaskState*>::ValueIterator it = m_task_states.Values(); it.Next();) delete *it.Get();
   m_task_states.Clear();
 
-  // RO: Release resources to the global pool before killing by DEATH_PROB
+  // RO: Release resources to the global pool before death
   if(m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get() == 1) {
-    m_reaction_result->Reset();
+    m_reaction_result->ResetLastConsumed();
   }
 }
 

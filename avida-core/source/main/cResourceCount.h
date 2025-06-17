@@ -170,7 +170,7 @@ public:
   void Modify(cAvidaContext& ctx, int id, double change);
   void ModifyCell(cAvidaContext& ctx, const Apto::Array<double> & res_change, int cell_id);
   
-  // RO: Release resources to the global pool before killing by DEATH_PROB
+  // RO: Release resources to the global pool before death
   void Release(cAvidaContext& ctx, int id, double units_released);
 
   void Set(cAvidaContext& ctx, int id, double new_level);

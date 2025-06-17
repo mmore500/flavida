@@ -27,6 +27,7 @@ cReactionResult::cReactionResult(const int num_resources,
 				 const int num_tasks,
 				 const int num_reactions)
   : resources_consumed(num_resources)
+  , last_resources_consumed(num_resources)
   , resources_produced(num_resources)
   , resources_detected(num_resources)
   , internal_resources_consumed(num_resources)
@@ -194,12 +195,6 @@ void cReactionResult::AddInst(const cString& inst)
 double cReactionResult::GetConsumed(int id)
 {
   if (GetActive() == false) return 0.0;
-  return resources_consumed[id];
-}
-
-// RO: Release resources to the global pool before killing by DEATH_PROB
-double cReactionResult::QueryConsumed(int id)
-{
   return resources_consumed[id];
 }
 

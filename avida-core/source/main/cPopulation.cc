@@ -6410,7 +6410,7 @@ void cPopulation::ProcessUpdateCellActions(cAvidaContext& ctx)
 {
   for (int i = 0; i < cell_array.GetSize(); i++) {
     if (cell_array[i].MutationRates().TestDeath(ctx)) {
-      // RO: Release resources to the global pool before killing by DEATH_PROB
+      // RO: Release resources to the global pool before death
       if(m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get() == 1 && (cell_array[i].IsOccupied() == true)) {
         
         // Get reaction result for current organism
@@ -6423,8 +6423,8 @@ void cPopulation::ProcessUpdateCellActions(cAvidaContext& ctx)
         cResourceCount& glogbal_resource_count = m_world->GetPopulation().GetResourceCount();
 
           // Get consumed resources
-          for (int i = 0; i < result->GetConsumedSize(); ++i) {
-            double consumed = result->QueryConsumed(i);
+          for (int i = 0; i < result->GetLastConsumedSize(); ++i) {
+            double consumed = result->QueryLastConsumed(i);
              for (int res_id = 0; res_id < glogbal_resource_count.GetSize(); ++res_id) {
               if (res_id == i) {
                   // Release consumed

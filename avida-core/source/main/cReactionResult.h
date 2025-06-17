@@ -29,6 +29,7 @@
 class cReactionResult {
 private:
   Apto::Array<double> resources_consumed;
+  Apto::Array<double> last_resources_consumed;
   Apto::Array<double> resources_produced;
   Apto::Array<double> resources_detected;  //Initialize to -1.0
   Apto::Array<double> internal_resources_consumed;
@@ -113,10 +114,11 @@ public:
   double GetAddGermline() { return germline_add; }
   double GetMultGermline() { return germline_mult; }
 
-  // RO: Release resources to the global pool before killing by DEATH_PROB
-  double QueryConsumed(int id);
-  int GetConsumedSize() const { return resources_consumed.GetSize(); }
-  void Reset() { resources_consumed.SetAll(0.0); }
+  // RO: Release resources to the global pool before death
+  double QueryLastConsumed(int id) { return last_resources_consumed[id]; };
+  void SetLastconsumed(int id, double value) { last_resources_consumed[id] = value; };
+  int GetLastConsumedSize() const { return last_resources_consumed.GetSize(); }
+  void ResetLastConsumed() { last_resources_consumed.SetAll(0.0); }
 };
 
 #endif
