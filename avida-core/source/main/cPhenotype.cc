@@ -1060,9 +1060,12 @@ void cPhenotype::DivideReset(const InstructionSequence& _genome)
   m_task_states.Clear();
 
   // RO: Release resources to the global pool before death
-  if(m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get() == 1) {
+  int washout = m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get();
+  if(washout == 1) {
+    m_reaction_result->ResetConsumed();
+  } else if(washout == 2) {
     m_reaction_result->ResetLastConsumed();
-  }
+  } 
 }
 
 /**

@@ -115,9 +115,11 @@ public:
   double GetMultGermline() { return germline_mult; }
 
   // RO: Release resources to the global pool before death
+  double QueryConsumed(int id) { return resources_consumed[id]; };
   double QueryLastConsumed(int id) { return last_resources_consumed[id]; };
   void SetLastconsumed(int id, double value) { last_resources_consumed[id] = value; };
-  int GetLastConsumedSize() const { return last_resources_consumed.GetSize(); }
+  int GetConsumedSize() const { return resources_consumed.GetSize(); }
+  void ResetConsumed() { resources_consumed.SetAll(0.0); }
   void ResetLastConsumed() { last_resources_consumed.SetAll(0.0); }
 };
 

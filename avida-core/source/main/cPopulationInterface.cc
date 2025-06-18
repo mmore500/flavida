@@ -452,7 +452,8 @@ void cPopulationInterface::Die(cAvidaContext& ctx)
   cPopulationCell & cell = m_world->GetPopulation().GetCell(m_cell_id);
 
   // RO: Release resources to the global pool before the death
-  if(m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get() == 1 && (cell.IsOccupied() == true)) {
+  int washout = m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get();
+  if(washout > 0 && (cell.IsOccupied() == true)) {
     // Get organism and its phenotype
     cOrganism* organism = cell.GetOrganism();
     cPhenotype& phenotype = organism->GetPhenotype();
@@ -469,8 +470,12 @@ void cPopulationInterface::Die(cAvidaContext& ctx)
       cResourceCount& global_resource_count = m_world->GetPopulation().GetResourceCount();
 
         // Get consumed resources
-        for (int i = 0; i < result->GetLastConsumedSize(); ++i) {
-          double consumed = result->QueryLastConsumed(i);
+        for (int i = 0; i < result->GetConsumedSize(); ++i) {
+          double consumed;
+          if (washout == 1)
+            consumed = result->QueryConsumed(i);
+          else if(washout == 2)
+            consumed = result->QueryLastConsumed(i);
           for (int res_id = 0; res_id < global_resource_count.GetSize(); ++res_id) {
             if (res_id == i) {
                 // Release consumed
