@@ -482,7 +482,6 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
         // RO: Print debug info before executing current instruction
         if(m_world->GetConfig().VERBOSITY.Get() == 5)
           TraceMore();
-
         if (SingleProcess_ExecuteInst(ctx, cur_inst))
         {
           SingleProcess_PayPostResCosts(ctx, cur_inst);
@@ -2037,7 +2036,7 @@ bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
     // Reset input buffers
     m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);
     // Reset stacks
-    for (int i = 0; i < NUM_LOCAL_STACKS; i++)
+    for (int i = 0; i < NUM_STACKS; i++)
       Stack(i).Clear();
   }
 

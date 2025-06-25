@@ -33,7 +33,7 @@
 #include "cHardwareBase.h"
 #include "cString.h"
 #include "tInstLib.h"
-
+#include "cWorld.h"
 
 class cHardwareTransSMT : public cHardwareBase
 {
@@ -90,6 +90,7 @@ protected:
 
   // Stacks
   cCPUStack m_global_stacks[NUM_GLOBAL_STACKS];
+  cCPUStack m_global_para_stacks[NUM_GLOBAL_STACKS];
 	
   // Memory
   Apto::Array<cCPUMemory, Apto::ManagedPointer> m_mem_array;
@@ -337,8 +338,12 @@ inline cCPUStack& cHardwareTransSMT::Stack(int stack_id)
   if (stack_id >= NUM_STACKS) stack_id = 0;
   if (stack_id < NUM_LOCAL_STACKS)
     return m_threads[m_cur_thread].local_stacks[stack_id];
-  else
-    return m_global_stacks[stack_id % NUM_LOCAL_STACKS];
+  else {
+    if(m_cur_thread > 0 && stack_id >= NUM_LOCAL_STACKS && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 1)
+      return m_global_para_stacks[stack_id % NUM_LOCAL_STACKS];
+    else
+      return m_global_stacks[stack_id % NUM_LOCAL_STACKS];
+  }
 }
 
 inline const cCPUStack& cHardwareTransSMT::Stack(int stack_id) const 
