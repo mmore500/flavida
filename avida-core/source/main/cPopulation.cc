@@ -6429,6 +6429,8 @@ void cPopulation::ProcessUpdateCellActions(cAvidaContext& ctx)
               if (res_id == i) {
                   // Release consumed
                   glogbal_resource_count.Release(ctx, res_id, consumed);
+                  if(m_world->GetConfig().VERBOSITY.Get() == 5)
+                    cout << "H " << organism->GetID() << " release " << consumed << " of " << res_id << " and dies. Time used: " << organism->GetPhenotype().GetTimeUsed() << " Parasites: " << organism->GetNumParasites() << endl;
                   break;
               }
             }
