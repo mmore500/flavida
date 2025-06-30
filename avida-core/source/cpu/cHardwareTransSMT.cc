@@ -248,6 +248,7 @@ void cHardwareTransSMT::TraceMore() {
   }
     cout << " " << m_organism->GetID();
     cout << " " << cur_inst.AsString();
+    cout << " t_u: " << hostPhenotype.GetTimeUsed();
 
     // Get taks and reaction count vars
     Apto::Array<int> last_tasks = hostPhenotype.GetLastTaskCount();
