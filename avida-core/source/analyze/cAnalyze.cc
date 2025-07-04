@@ -1839,7 +1839,17 @@ void cAnalyze::CommandTrace(cString cur_string)
     HardwareTracerPtr tracer(new cHardwareStatusPrinter(m_world->GetNewWorld(), (const char*)filename));
     
     // Build the test info for printing.
-    cCPUTestInfo test_info;  
+    cCPUTestInfo test_info;
+
+    // RO: set transmission type as HORIZONTAL if F is found within the sequence
+    if(genotype->GetName().Find("par") != -1 || genotype->GetSequence().Find("F") != -1 ) {
+      // The genotype owns to a parasite, set transmission type to HORIZONTAL
+      test_info.SetTransmissionType(Systematics::HORIZONTAL);
+    } else {
+      // The genotype owns to a host, set transmission type to DIVISION
+      test_info.SetTransmissionType(Systematics::DIVISION);
+    }
+
     test_info.SetTraceExecution(tracer);
     if (use_manual_inputs)
       test_info.UseManualInputs(manual_inputs);
@@ -10488,9 +10498,10 @@ void cAnalyze::BatchRecalculate(cString cur_string)
   tListIterator<cAnalyzeGenotype> batch_it(batch[cur_batch].List());
   cAnalyzeGenotype * genotype = NULL;
   cAnalyzeGenotype * last_genotype = NULL;
-  while ((genotype = batch_it.Next()) != NULL) {    
-
-    if(genotype->GetName().Find("par") != -1) {
+  
+  while ((genotype = batch_it.Next()) != NULL) {
+    // RO: set transmission type as HORIZONTAL if F is found within the sequence    
+    if(genotype->GetName().Find("par") != -1 || genotype->GetSequence().Find("F") != -1 ) {
       // The genotype owns to a parasite, set transmission type to HORIZONTAL
       test_info.SetTransmissionType(Systematics::HORIZONTAL);
     } else {
@@ -10568,6 +10579,7 @@ void cAnalyze::BatchRecalculateWithArgs(cString cur_string)
     use_random_inputs = false;
   
   cCPUTestInfo test_info;
+
   if (use_manual_inputs)
     test_info.UseManualInputs(manual_inputs);
   else
@@ -10590,7 +10602,15 @@ void cAnalyze::BatchRecalculateWithArgs(cString cur_string)
   tListIterator<cAnalyzeGenotype> batch_it(batch[cur_batch].List());
   cAnalyzeGenotype * genotype = NULL;
   cAnalyzeGenotype * last_genotype = NULL;
-  while ((genotype = batch_it.Next()) != NULL) {    
+  while ((genotype = batch_it.Next()) != NULL) {
+    // RO: set transmission type as HORIZONTAL if F is found within the sequence
+    if(genotype->GetName().Find("par") != -1 || genotype->GetSequence().Find("F") != -1 ) {
+      // The genotype owns to a parasite, set transmission type to HORIZONTAL
+      test_info.SetTransmissionType(Systematics::HORIZONTAL);
+    } else {
+      // The genotype owns to a host, set transmission type to DIVISION
+      test_info.SetTransmissionType(Systematics::DIVISION);
+    }    
     // If the previous genotype was the parent of this one, pass in a pointer
     // to it for improved recalculate (such as distance to parent, etc.)
     if (last_genotype != NULL && genotype->GetParentID() == last_genotype->GetID()) {
