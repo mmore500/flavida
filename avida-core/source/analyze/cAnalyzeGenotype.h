@@ -445,7 +445,7 @@ public:
   const Apto::Array<int>& GetEnvInputs() const{
     return m_env_inputs;
   }
-  cString DescEnvInput(int input_id) const { return cStringUtil::Stringf("task.%d", input_id); }
+  cString DescEnvInput(int input_id) const { return cStringUtil::Stringf("input.%d", input_id); }
   
   double GetRBinTotal(int resource_id) const {
     if (resource_id >= rbins_total.GetSize()) return -1;
