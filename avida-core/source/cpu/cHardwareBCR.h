@@ -348,6 +348,7 @@ public:
   // --------  Parasite Stuff  -------- @ not implemented
   bool ParasiteInfectHost(Systematics::UnitPtr) { return false; }
 
+  bool MemSpaceInit() { return false; }
   
 private:
   // --------  Core Execution Methods  --------

@@ -303,6 +303,8 @@ public:
 
   // --------  Parasite Stuff  --------
   bool ParasiteInfectHost(Systematics::UnitPtr) { return false; }
+
+  bool MemSpaceInit() { return false; }
     
   // -------- Kaboom Stuff ------------
   bool checkNoMutList(cHeadCPU to);

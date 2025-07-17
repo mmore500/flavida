@@ -207,7 +207,7 @@ Systematics::UnitPtr cHardwareTransSMT::ThreadGetOwner()
 // RO: Print debug info before executing current instruction
 void cHardwareTransSMT::TraceMore() {
   // Do not print output for TestCPU
-  if (m_organism->GetCellID() == -1) return;
+  if (m_organism->GetCellID() == -1 && !m_world->GetConfig().ANALYZE_MODE.Get()) return;
 
   // Get current instruction
   const Instruction cur_inst = IP().GetInst();
@@ -222,7 +222,7 @@ void cHardwareTransSMT::TraceMore() {
   int output_offset;
   Systematics::TransmissionType  transmission_type;
 
-  if(m_cur_thread == 1) {
+  if (ThreadGetOwner()->UnitSource().transmission_type == Systematics::TransmissionType::HORIZONTAL) {
     // Get inputs and buffers for parasite
     cout << "P";
     if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get()) {
@@ -311,13 +311,14 @@ void cHardwareTransSMT::TraceMore() {
     }
 
     // Print global resources
-    if (res_count->ReadResources().GetSize() > 0) {
-      std::cout << " g_r: ";
-      for(int i = 0; i < res_count->ReadResources().GetSize(); i++) {
-        std::cout << "[" << res_count->ReadResources()[i] << "]";
+    if(!m_world->GetConfig().ANALYZE_MODE.Get()) {
+      if (res_count->ReadResources().GetSize() > 0) {
+        std::cout << " g_r: ";
+        for(int i = 0; i < res_count->ReadResources().GetSize(); i++) {
+          std::cout << "[" << res_count->ReadResources()[i] << "]";
+        }
       }
     }
-
 
     // Print last task count (only hosts)
     if(host_last_tasks.GetSize() > 0) {
@@ -382,6 +383,8 @@ void cHardwareTransSMT::TraceMore() {
     for(int i = 0; i < NUM_STACKS; i++)
       cout << " " << Stack(i).Peek();
 
+    // Print next label
+    cout << " lbl: " << m_threads[m_cur_thread].next_label.AsString();
     cout << endl;
 }
 
@@ -408,7 +411,7 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
     m_cur_thread++;
     // Ignore incremeting the thread, set it to be the parasite, unless we draw something lower thean 0.8
     // Then set it to the parasite
-    if (m_threads.GetSize() > 1 && m_threads[1].owner->UnitSource().transmission_type == Systematics::HORIZONTAL)
+    if (!m_world->GetConfig().ANALYZE_MODE.Get() && m_threads.GetSize() > 1 && m_threads[1].owner->UnitSource().transmission_type == Systematics::HORIZONTAL)
     {
       Apto::SmartPtr<cParasite, Apto::InternalRCObject> parasite;
       parasite.DynamicCastFrom(m_threads[1].owner);
@@ -480,7 +483,7 @@ bool cHardwareTransSMT::SingleProcess(cAvidaContext &ctx, bool speculative)
 
       if (exec == true) {
         // RO: Print debug info before executing current instruction
-        if(m_world->GetConfig().VERBOSITY.Get() == 5)
+        if(m_world->GetConfig().VERBOSITY.Get() == 5 )
           TraceMore();
         if (SingleProcess_ExecuteInst(ctx, cur_inst))
         {
@@ -919,6 +922,21 @@ bool cHardwareTransSMT::InjectParasite(cAvidaContext &ctx, double mut_multiplier
 
   Inject_DoMutations(ctx, mut_multiplier, injected_code);
 
+  // RO: analyze parasites
+  if (m_world->GetConfig().ANALYZE_MODE.Get()) {
+    // Increment number of division
+    m_organism->GetPhenotype().DivideReset(injected_code);
+
+    // Set the OffSpring
+    InstructionSequencePtr offspring_seq(new InstructionSequence(injected_code));
+    HashPropertyMap props;
+    cHardwareManager::SetupPropertyMap(props, (const char *)m_inst_set->GetInstSetName());
+    Genome offspring(GetType(), props, offspring_seq);
+    m_organism->OffspringGenome() = offspring;
+    
+    return true;
+  }
+
   bool inject_signal = false;
   if (injected_code.GetSize() > 0)
   {
@@ -950,6 +968,37 @@ bool cHardwareTransSMT::InjectParasite(cAvidaContext &ctx, double mut_multiplier
   AdvanceIP() = false;
 
   return inject_signal;
+}
+
+// RO: analyze parasites
+bool cHardwareTransSMT::MemSpaceInit()
+{
+  cCodeLabel label;
+  label.ReadString((const char *)ThreadGetOwner()->UnitSource().arguments);
+
+  // Inject fails if the memory space is already in use
+  if (label.GetSize() == 0 || MemorySpaceExists(label))
+    return false;
+
+  // Check for existing thread
+  int hash_key = label.AsInt(NUM_NOPS);
+  if (!m_thread_lbls.Get(hash_key, m_cur_thread))
+    m_thread_lbls.Set(hash_key, m_cur_thread);
+
+  // Create the memory space and copy in the parasite
+  int mem_space = FindMemorySpaceLabel(label, -1);
+  assert(mem_space != -1);
+  const Genome &bu_gen = ThreadGetOwner()->UnitGenome();
+  ConstInstructionSequencePtr bu_seq_p;
+  bu_seq_p.DynamicCastFrom(bu_gen.Representation());
+  const InstructionSequence &bu_seq = *bu_seq_p;
+  m_mem_array[mem_space] = bu_seq;
+
+  // Setup the thread
+  m_threads[m_cur_thread].Reset(this, mem_space);
+  m_threads[m_cur_thread].owner = ThreadGetOwner();
+
+  return true;
 }
 
 bool cHardwareTransSMT::ParasiteInfectHost(Systematics::UnitPtr bu)
@@ -2009,11 +2058,6 @@ bool cHardwareTransSMT::Inst_ThreadKill(cAvidaContext &)
 //  into the complement template found in a neighboring organism.
 bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
 {
-  // Execute Inst_Divide_Erase for parasites in analyze mode only
-  if (m_world->GetConfig().ANALYZE_MODE.Get() > 0 && ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL) {
-    return Inst_Divide_Erase(ctx);
-  }
-  
   ReadLabel(MAX_MEMSPACE_LABEL);
 
   if (ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
@@ -2179,8 +2223,17 @@ bool cHardwareTransSMT::Inst_Divide_Asex_Wait(cAvidaContext &ctx)
 bool cHardwareTransSMT::Inst_Divide_Erase(cAvidaContext &ctx)
 {
   bool toReturn = Divide_Main(ctx);
+
   // RO: Reset input buffers and local stacks
-  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && m_world->GetConfig().DIVIDE_HOST_RESET.Get() && ThreadGetOwner()->UnitSource().transmission_type == Systematics::DIVISION)
+  if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && 
+      (
+        (m_world->GetConfig().DIVIDE_HOST_RESET.Get() &&
+         ThreadGetOwner()->UnitSource().transmission_type == Systematics::DIVISION) ||
+
+        (m_world->GetConfig().ANALYZE_MODE.Get() &&
+         m_world->GetConfig().INJECT_RESET.Get() &&
+         ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
+      ))
   {
     // Reset input pointer
     m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);

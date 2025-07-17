@@ -260,8 +260,12 @@ bool cTestCPU::TestGenome_Body(cAvidaContext& ctx, cCPUTestInfo& test_info, cons
   if (test_info.org_array[cur_depth] != NULL) {
     delete test_info.org_array[cur_depth];
   }
+
+  // RO: analyze parasites
+  const char* label = m_world->GetConfig().ANALYZE_MODE.Get() ? (const char*)test_info.GetLabel() : "";
+
   // Initializes organism with specific transmission type (host or parasite).
-  cOrganism* organism = new cOrganism(m_world, ctx, genome, -1, Systematics::Source(test_info.GetTransmissionType(), "", true));
+  cOrganism* organism = new cOrganism(m_world, ctx, genome, -1, Systematics::Source(test_info.GetTransmissionType(), label , true));
   
   // Copy the test mutation rates
   organism->MutationRates().Copy(test_info.MutationRates());
@@ -272,6 +276,11 @@ bool cTestCPU::TestGenome_Body(cAvidaContext& ctx, cCPUTestInfo& test_info, cons
   seq.DynamicCastFrom(genome.Representation());
   organism->GetPhenotype().SetupInject(*seq);
 
+  // RO: analyze parasites
+  if (m_world->GetConfig().ANALYZE_MODE.Get() && test_info.GetTransmissionType() == Systematics::TransmissionType::HORIZONTAL) {
+    bool result = organism->GetHardware().MemSpaceInit();
+  }
+
   // Run the current organism.
   ProcessGestation(ctx, test_info, cur_depth);
 
@@ -279,6 +288,12 @@ bool cTestCPU::TestGenome_Body(cAvidaContext& ctx, cCPUTestInfo& test_info, cons
   // Notify the organism that it has died to allow for various cleanup methods to run
   organism->NotifyDeath(ctx);
   
+  // RO: anlyze parasites
+  if (organism->GetPhenotype().GetNumDivides() > 0 &&  m_world->GetConfig().ANALYZE_MODE.Get() && test_info.m_transmission_type == Systematics::TransmissionType::HORIZONTAL) {
+    test_info.depth_found = cur_depth;
+    test_info.is_viable = true;
+    return true;
+  }
 
   // Must be able to divide twice in order to form a successful colony,
   // assuming the CPU doesn't get reset on divides.

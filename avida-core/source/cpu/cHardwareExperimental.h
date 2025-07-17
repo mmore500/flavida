@@ -303,6 +303,7 @@ public:
   // --------  Parasite Stuff  --------
   bool ParasiteInfectHost(Systematics::UnitPtr) { return false; }
 
+  bool MemSpaceInit() { return false; }
   
 private:
   

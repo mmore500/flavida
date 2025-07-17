@@ -75,9 +75,10 @@ class cAnalyzeGenotype
   friend class ReadToken;
 private:
   cWorld* m_world;
-  Genome m_genome;        // Full Genome
-  cString name;              // Name, if one was provided in loading
+  Genome m_genome;              // Full Genome
+  cString name;                 // Name, if one was provided in loading
   cCPUTestInfo m_cpu_test_info; // Use this test info
+  cString label;                // RO: analyze parasites
   
   struct sGenotypeDatastore : public Apto::RefCountObject<Apto::ThreadSafe>
   {
@@ -241,6 +242,7 @@ public:
   // Set...
   void SetInstSet(const cString& inst_set);
   void SetName(const cString& _name) { name = _name; }
+  void SetLabel(const cString& _label) { label = _label; }
   void SetAlignedSequence(const cString & _seq) { aligned_sequence = _seq; }
   void SetTag(const cString& _tag) { tag = _tag; }
 
@@ -297,6 +299,7 @@ public:
 
   const Genome& GetGenome() const { return m_genome; }
   const cString& GetName() const { return name; }
+  const cString& GetLabel() const { return label; }
   const cString& GetAlignedSequence() const { return aligned_sequence; }
   cString GetExecutedFlags() const { return executed_flags; }
   cString GetAlignmentExecutedFlags() const;
