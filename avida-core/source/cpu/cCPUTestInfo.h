@@ -31,6 +31,8 @@
 
 #include "avida/systematics/Types.h"
 
+#include "cString.h"
+
 class cOrganism;
 class cPhenotype;
 class cResourceHistory;
@@ -77,6 +79,9 @@ private:
   int m_res_update;
   int m_res_cpu_cycle_offset;
 
+  // RO: analyze parasites
+  cString m_label;
+  inline void SetLabel(const Apto::String& label) { m_label = label; }
 
 public:
   cCPUTestInfo(int max_tests=nHardware::TEST_CPU_GENERATIONS);
@@ -128,6 +133,10 @@ public:
   // Transmission type
   void SetTransmissionType(Avida::Systematics::TransmissionType transmision_type) { m_transmission_type = transmision_type; }
   Avida::Systematics::TransmissionType GetTransmissionType() { return m_transmission_type; }
+
+  // RO: analyze parasites
+  const cString GetLabel() const { return m_label; }
+  void SetLabel(const cString& _label) { m_label = _label; }
 };
 
 

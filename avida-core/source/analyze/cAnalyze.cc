@@ -215,6 +215,7 @@ void cAnalyze::LoadSequence(cString cur_string)
   static int sequence_count = 1;
   cString sequence = cur_string.PopWord();
   cString seq_name = cur_string.PopWord();
+  cString seq_label = cur_string.PopWord();
   
   cout << "Loading: " << sequence << endl;
   
@@ -226,9 +227,18 @@ void cAnalyze::LoadSequence(cString cur_string)
   cAnalyzeGenotype* genotype = new cAnalyzeGenotype(m_world, genome);
   
   genotype->SetNumCPUs(1);      // Initialize to a single organism.
+
+  // RO: analyze parasites
+  if (genotype->GetSequence().Find("F") != -1) {
+    seq_label = seq_name;
+    seq_name = "";
+  }
+
   if (seq_name == "") {
     seq_name = cStringUtil::Stringf("org-Seq%d", sequence_count);
   }
+
+  genotype->SetLabel(seq_label);
   genotype->SetName(seq_name);
   sequence_count++;
   
@@ -842,6 +852,10 @@ void cAnalyze::LoadFile(cString cur_string)
       else if(rvData == "div:int" || rvData == "div:ext")
         namePrefix = "org-%d";
       data_command->SetValue(genotype, rvData);
+
+      // RO: analyze parasites
+      if(data_command->GetName() == "src_args")
+        genotype->SetLabel(rvData == "(none)" ? "" : rvData);
     }
     
     // Give this genotype a name.  Base it on the ID if possible.
@@ -1849,6 +1863,9 @@ void cAnalyze::CommandTrace(cString cur_string)
       // The genotype owns to a host, set transmission type to DIVISION
       test_info.SetTransmissionType(Systematics::DIVISION);
     }
+
+    // RO: analyze parasites
+    test_info.SetLabel(genotype->GetLabel());
 
     test_info.SetTraceExecution(tracer);
     if (use_manual_inputs)
@@ -10508,6 +10525,9 @@ void cAnalyze::BatchRecalculate(cString cur_string)
       // The genotype owns to a host, set transmission type to DIVISION
       test_info.SetTransmissionType(Systematics::DIVISION);
     }
+
+    // RO: analyze parasites
+    test_info.SetLabel(genotype->GetLabel());
     
     // If the previous genotype was the parent of this one, pass in a pointer
     // to it for improved recalculate (such as distance to parent, etc.)
@@ -10610,7 +10630,11 @@ void cAnalyze::BatchRecalculateWithArgs(cString cur_string)
     } else {
       // The genotype owns to a host, set transmission type to DIVISION
       test_info.SetTransmissionType(Systematics::DIVISION);
-    }    
+    }
+    
+    // RO: analyze parasites
+    test_info.SetLabel(genotype->GetLabel());
+
     // If the previous genotype was the parent of this one, pass in a pointer
     // to it for improved recalculate (such as distance to parent, etc.)
     if (last_genotype != NULL && genotype->GetParentID() == last_genotype->GetID()) {

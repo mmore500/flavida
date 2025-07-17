@@ -213,6 +213,8 @@ public:
   
   // --------  Parasite Stuff  --------
   virtual bool ParasiteInfectHost(Systematics::UnitPtr bu) = 0;
+
+  virtual bool MemSpaceInit() = 0;
   
     
   // --------  Mutation  --------

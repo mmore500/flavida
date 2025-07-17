@@ -241,6 +241,9 @@ public:
 
   // --------  Parasite Stuff  --------
   bool ParasiteInfectHost(Systematics::UnitPtr bu);
+
+  // RO: analyze parasites
+  bool MemSpaceInit();
   
   // --------  Resource Collection Helper Methods  --------
   int FindModifiedResource(cAvidaContext& ctx, int& spec_id);
