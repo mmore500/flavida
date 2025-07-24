@@ -9120,6 +9120,18 @@ void cAnalyze::AnalyzeFitnessLandscapeOneSite(cString cur_string)
     updateBorn = genotype->GetUpdateBorn();
     cCPUTestInfo test_info;
     test_info.SetResourceOptions(useResources, m_resources, updateBorn, m_resource_time_spent_offset);
+
+    // RO: set transmission type as HORIZONTAL if F is found within the sequence    
+    if(genotype->GetName().Find("par") != -1 || genotype->GetSequence().Find("F") != -1 ) {
+      // The genotype owns to a parasite, set transmission type to HORIZONTAL
+      test_info.SetTransmissionType(Systematics::HORIZONTAL);
+    } else {
+      // The genotype owns to a host, set transmission type to DIVISION
+      test_info.SetTransmissionType(Systematics::DIVISION);
+    }
+
+    // RO: analyze parasites
+    test_info.SetLabel(genotype->GetLabel());
     
     // Calculate the stats for the genotype we're working with ...
     genotype->Recalculate(m_ctx, &test_info);
@@ -9166,14 +9178,29 @@ void cAnalyze::AnalyzeFitnessLandscapeOneSite(cString cur_string)
         for (int mod_inst = 0; mod_inst < num_insts; mod_inst++) {
             // modify mod_genome at that site
             seq[site].SetOp(mod_inst);
+            
             // analyze mod_genome
             cAnalyzeGenotype test_genotype(m_world, mod_genome);
-            test_genotype.Recalculate(m_ctx);
-            double mod_fitness = test_genotype.GetFitness();
+
+            // RO: analyze parasites
+            cCPUTestInfo mut_test_info;
+            mut_test_info.SetTransmissionType(test_info.GetTransmissionType());
+            mut_test_info.SetLabel(test_info.GetLabel());
+            test_genotype.SetLabel(test_info.GetLabel());
+
+            // RO: Do not calcualte when mutates to F for hosts or G for parasites
+            if(!((test_info.GetTransmissionType() == Systematics::DIVISION && seq[site].AsString() == "F")
+              || (test_info.GetTransmissionType() == Systematics::HORIZONTAL && seq[site].AsString() == "G"))) {
+              test_genotype.Recalculate(m_ctx,&mut_test_info);
+              double mod_fitness = test_genotype.GetFitness();
+              fit_land_fp->WriteAnonymous(mod_fitness);
+              fit_land_fp->Endl();
+            }
+                        
             // write to file
             //fit_land_fp->Write(mod_fitness, cStringUtil::Stringf("Instruction, site: %d ", mod_inst));
-            fit_land_fp->WriteAnonymous(mod_fitness);
-          fit_land_fp->Endl();
+            
+          
         }   
         // Reset the mod_genome back to the original sequence.
         seq[site].SetOp(curr_inst);
@@ -9254,6 +9281,18 @@ void cAnalyze::AnalyzeFitnessLandscapeTwoSites(cString cur_string)
     updateBorn = genotype->GetUpdateBorn();
     cCPUTestInfo test_info;
     test_info.SetResourceOptions(useResources, m_resources, updateBorn, m_resource_time_spent_offset);
+
+    // RO: set transmission type as HORIZONTAL if F is found within the sequence    
+    if(genotype->GetName().Find("par") != -1 || genotype->GetSequence().Find("F") != -1 ) {
+      // The genotype owns to a parasite, set transmission type to HORIZONTAL
+      test_info.SetTransmissionType(Systematics::HORIZONTAL);
+    } else {
+      // The genotype owns to a host, set transmission type to DIVISION
+      test_info.SetTransmissionType(Systematics::DIVISION);
+    }
+
+    // RO: analyze parasites
+    test_info.SetLabel(genotype->GetLabel());
     
     // Calculate the stats for the genotype we're working with ...
     genotype->Recalculate(m_ctx, &test_info);
@@ -9297,19 +9336,32 @@ void cAnalyze::AnalyzeFitnessLandscapeTwoSites(cString cur_string)
         // run through all possible instruction combinations
         // at two sites
         for (int mod_inst1 = 0; mod_inst1 < num_insts; mod_inst1++) {
+          int doNotPrint = 0;
           for (int mod_inst2 = 0; mod_inst2 < num_insts; mod_inst2++) {
             // modify mod_genome at two sites
             seq[site1].SetOp(mod_inst1);
             seq[site2].SetOp(mod_inst2);
             // analyze mod_genome
             cAnalyzeGenotype test_genotype(m_world, mod_genome);
-            test_genotype.Recalculate(m_ctx);
-            double mod_fitness = test_genotype.GetFitness();
-             
-            // write to file
-            fit_land_fp->Write(mod_fitness, cStringUtil::Stringf("Instruction, site 2: %d ", mod_inst2));
+
+            // RO: analyze parasites
+            cCPUTestInfo mut_test_info;
+            mut_test_info.SetTransmissionType(test_info.GetTransmissionType());
+            mut_test_info.SetLabel(test_info.GetLabel());
+            test_genotype.SetLabel(test_info.GetLabel());
+
+            // RO: Do not calcualte when mutates to F for hosts or G for parasites
+            if(((test_info.GetTransmissionType() == Systematics::DIVISION && (seq[site1].AsString() == "F" || seq[site2].AsString() == "F"))
+              || (test_info.GetTransmissionType() == Systematics::HORIZONTAL && (seq[site1].AsString() == "G" || seq[site2].AsString() == "G")))) {
+              doNotPrint++;
+            } else {
+              test_genotype.Recalculate(m_ctx,&mut_test_info);
+              double mod_fitness = test_genotype.GetFitness();
+              fit_land_fp->Write(mod_fitness, cStringUtil::Stringf("Instruction, site 2: %d ", mod_inst2));
+            }
           }
-          fit_land_fp->Endl();
+          if(doNotPrint < num_insts)
+            fit_land_fp->Endl();
         }   
         // Reset the mod_genome back to the original sequence.
         seq[site1].SetOp(curr_inst1);
