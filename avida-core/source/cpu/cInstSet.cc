@@ -92,6 +92,10 @@ Instruction cInstSet::GetRandomInstByTransmissionType(cAvidaContext &ctx, System
       // Get a random instruction
       Instruction curr_inst = GetRandomInst(ctx);
 
+      if(!InstInSet("Divide-Erase") && !InstInSet("Inject")) {
+         return curr_inst;
+      }
+      
       // Get Inject instruction
       Instruction f_inst = GetInst("Inject");
 
