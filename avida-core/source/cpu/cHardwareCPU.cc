@@ -1177,10 +1177,12 @@ bool cHardwareCPU::SingleProcess(cAvidaContext& ctx, bool speculative)
       if (m_promoters_enabled) m_threads[m_cur_thread].IncPromoterInstExecuted();
       
       if (exec == true) {
-        TraceMore();
-        if (SingleProcess_ExecuteInst(ctx, cur_inst)) { 
-          SingleProcess_PayPostResCosts(ctx, cur_inst); 
-          SingleProcess_SetPostCPUCosts(ctx, cur_inst, m_cur_thread); 
+        if(m_world->GetConfig().VERBOSITY.Get() == 5 ) {
+          TraceMore();
+        }
+        if (SingleProcess_ExecuteInst(ctx, cur_inst)) {
+          SingleProcess_PayPostResCosts(ctx, cur_inst);
+          SingleProcess_SetPostCPUCosts(ctx, cur_inst, m_cur_thread);
         }
       }
       
