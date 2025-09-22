@@ -2371,8 +2371,20 @@ cOrganism* cPopulation::GetRandPrey(cAvidaContext& ctx, cOrganism* org)
 
 void cPopulation::KillOrganism(cPopulationCell& in_cell, cAvidaContext& ctx)
 {
+  // RO: Release resources to the global pool if RELEASE_TAKEN_RESOURCES_WASHOUT is enabled
+  // and kill organism
+  KillOrganism(in_cell, ctx, true);
+}
+
+void cPopulation::KillOrganism(cPopulationCell& in_cell, cAvidaContext& ctx, bool release_resources)
+{
   // do we actually have something to kill?
   if (in_cell.IsOccupied() == false) return;
+  
+  // RO: Release resources to the global pool if RELEASE_TAKEN_RESOURCES_WASHOUT is enabled
+  if (release_resources) {
+    ReleaseOrganismResources(in_cell, ctx);
+  }
   
   // Statistics...
   cOrganism* organism = in_cell.GetOrganism();
@@ -2440,6 +2452,54 @@ void cPopulation::KillOrganism(cPopulationCell& in_cell, cAvidaContext& ctx)
   
   // Alert the scheduler that this cell has a 0 merit.
   AdjustSchedule(in_cell, cMerit(0));
+}
+
+// RO: Release resources to the global pool if RELEASE_TAKEN_RESOURCES_WASHOUT is enabled
+void cPopulation::ReleaseOrganismResources(cPopulationCell& in_cell, cAvidaContext& ctx)
+{
+  // Check if resource release is enabled
+  int washout = m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get();
+  if (washout == 0 || !in_cell.IsOccupied()) return;
+  
+  // Get organism and its phenotype
+  cOrganism* organism = in_cell.GetOrganism();
+  cPhenotype& phenotype = organism->GetPhenotype();
+  
+  // Get reaction result for current organism
+  cReactionResult* result = phenotype.GetReactionResult();
+  
+  // Search consumed resources in reactions
+  if (result != nullptr) {
+    cResourceCount& global_resource_count = GetResourceCount();
+    
+    // Get consumed resources
+    for (int i = 0; i < result->GetConsumedSize(); ++i) {
+      double consumed;
+      if (washout == 1)
+        consumed = result->QueryConsumed(i);
+      else if (washout == 2)
+        consumed = result->QueryLastConsumed(i);
+
+      // Do not release for this resource if consumed value is nan
+      if (std::isnan(consumed) || consumed < 0.0)  {
+        if (m_world->GetConfig().VERBOSITY.Get() == 5)
+          cout << "H " << organism->GetID() << " skips releasing " << consumed << " of "  << i << endl;
+        continue;
+      }
+
+      for (int res_id = 0; res_id < global_resource_count.GetSize(); ++res_id) {
+        if (res_id == i) {
+          // Release consumed resources back to global pool
+          global_resource_count.Release(ctx, res_id, consumed);
+          if (m_world->GetConfig().VERBOSITY.Get() == 5)
+            cout << "H " << organism->GetID() << " release " << consumed 
+                 << " of " << res_id << " and dies. Time used: " << organism->GetPhenotype().GetTimeUsed() 
+                 << " Parasites: " << organism->GetNumParasites() << endl;
+          break;
+        }
+      }
+    }
+  }
 }
 
 void cPopulation::InjureOrg(cAvidaContext& ctx, cPopulationCell& in_cell, double injury, bool ding_reacs)
@@ -6410,40 +6470,9 @@ void cPopulation::ProcessUpdateCellActions(cAvidaContext& ctx)
 {
   for (int i = 0; i < cell_array.GetSize(); i++) {
     if (cell_array[i].MutationRates().TestDeath(ctx)) {
-      // RO: Release resources to the global pool before death
-      int washout = m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get();
-      if(washout > 0 && (cell_array[i].IsOccupied() == true)) {
-        // Get reaction result for current organism
-        cOrganism* organism = cell_array[i].GetOrganism();
-        cPhenotype& phenotype = organism->GetPhenotype();  
-        cReactionResult* result = phenotype.GetReactionResult();
-
-        // Search consumed resources in reactions
-        if (result != nullptr) {
-        cResourceCount& glogbal_resource_count = m_world->GetPopulation().GetResourceCount();
-
-          // Get consumed resources
-          for (int i = 0; i < result->GetConsumedSize(); ++i) {
-            double consumed;
-            if (washout == 1)
-              consumed = result->QueryConsumed(i);
-            else if(washout == 2)
-              consumed = result->QueryLastConsumed(i);
-            for (int res_id = 0; res_id < glogbal_resource_count.GetSize(); ++res_id) {
-              if (res_id == i) {
-                  // Release consumed
-                  glogbal_resource_count.Release(ctx, res_id, consumed);
-                  if(m_world->GetConfig().VERBOSITY.Get() == 5)
-                    cout << "H " << organism->GetID() << " release " << consumed << " of " << res_id << " and dies. Time used: " << organism->GetPhenotype().GetTimeUsed() << " Parasites: " << organism->GetNumParasites() << endl;
-                  break;
-              }
-            }
-          }
-        }
-      }
-
-      // Kill the organism
-      KillOrganism(cell_array[i], ctx);
+      // RO: Release resources to the global pool before death if RELEASE_TAKEN_RESOURCES_WASHOUT is enabled
+      // and Kill the organism
+      KillOrganism(cell_array[i], ctx, true);
     } 
   }
 }

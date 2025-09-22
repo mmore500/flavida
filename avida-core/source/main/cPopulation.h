@@ -170,7 +170,9 @@ public:
   
   // Deactivate an organism in the population (required for deactivations)
   void KillOrganism(cPopulationCell& in_cell, cAvidaContext& ctx); 
-  void KillOrganism(cAvidaContext& ctx, int in_cell) { KillOrganism(cell_array[in_cell], ctx); } 
+  void KillOrganism(cPopulationCell& in_cell, cAvidaContext& ctx, bool release_resources);
+  void KillOrganism(cAvidaContext& ctx, int in_cell) { KillOrganism(cell_array[in_cell], ctx); }
+  void ReleaseOrganismResources(cPopulationCell& in_cell, cAvidaContext& ctx);
   void InjureOrg(cAvidaContext& ctx, cPopulationCell& in_cell, double injury, bool ding_reacs = true);
   
   // @WRE 2007/07/05 Helper function to take care of side effects of Avidian 

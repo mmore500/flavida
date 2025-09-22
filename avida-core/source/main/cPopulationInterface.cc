@@ -451,7 +451,7 @@ void cPopulationInterface::Die(cAvidaContext& ctx)
 {
   cPopulationCell & cell = m_world->GetPopulation().GetCell(m_cell_id);
 
-  // RO: Release resources to the global pool before the death
+  // RO: Release resources to the global pool before the death if age limit exceeded
   int washout = m_world->GetConfig().RELEASE_TAKEN_RESOURCES_WASHOUT.Get();
   if(washout > 0 && (cell.IsOccupied() == true)) {
     // Get organism and its phenotype
@@ -462,35 +462,12 @@ void cPopulationInterface::Die(cAvidaContext& ctx)
     const int max_executed = organism->GetMaxExecuted();
     if ((max_executed > 0 && phenotype.GetTimeUsed() >= max_executed))
     {
-      // Get reaction result for current organism
-      cReactionResult* result = phenotype.GetReactionResult();
-
-      // Search consumed resources in reactions
-      if (result != nullptr) {
-      cResourceCount& global_resource_count = m_world->GetPopulation().GetResourceCount();
-
-        // Get consumed resources
-        for (int i = 0; i < result->GetConsumedSize(); ++i) {
-          double consumed;
-          if (washout == 1)
-            consumed = result->QueryConsumed(i);
-          else if(washout == 2)
-            consumed = result->QueryLastConsumed(i);
-          for (int res_id = 0; res_id < global_resource_count.GetSize(); ++res_id) {
-            if (res_id == i) {
-                // Release consumed
-                global_resource_count.Release(ctx, res_id, consumed);
-                if(m_world->GetConfig().VERBOSITY.Get() == 5)
-                  cout << "H " << organism->GetID() << " release " << consumed << " of " << res_id << " and dies. Time used: " << organism->GetPhenotype().GetTimeUsed() << " Parasites: " << organism->GetNumParasites() << endl;
-                break;
-            }
-          }
-        }
-      }
+      // Use the centralized resource release function
+      m_world->GetPopulation().ReleaseOrganismResources(cell, ctx);
     }
   }
 
-  m_world->GetPopulation().KillOrganism(cell, ctx);
+  m_world->GetPopulation().KillOrganism(cell, ctx, false);
 }
 
 void cPopulationInterface::KillCellID(int target, cAvidaContext& ctx) 
