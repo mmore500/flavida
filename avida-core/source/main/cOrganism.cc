@@ -910,8 +910,10 @@ bool cOrganism::Divide_CheckViable(cAvidaContext& ctx)
   const int required_reaction = m_world->GetConfig().REQUIRED_REACTION.Get();
   const int immunity_reaction = m_world->GetConfig().IMMUNITY_REACTION.Get();
   const int single_reaction = m_world->GetConfig().REQUIRE_SINGLE_REACTION.Get();
+  const cString required_reactions = m_world->GetConfig().REQUIRED_REACTIONS.Get();
   const int max_task_count = m_world->GetConfig().MAX_UNIQUE_TASK_COUNT.Get();
   
+  // Scenario 0: REQUIRE_SINGLE_REACTION == 0 - Use REQUIRED_REACTION (original behavior)
   if (single_reaction == 0 && required_reaction != -1 && m_phenotype.GetCurReactionCount()[required_reaction] == 0 && \
       m_phenotype.GetStolenReactionCount()[required_reaction] == 0)   {
     if (immunity_reaction == -1 || m_phenotype.GetCurReactionCount()[immunity_reaction] == 0) {  
@@ -920,7 +922,7 @@ bool cOrganism::Divide_CheckViable(cAvidaContext& ctx)
       return false; //  (divide fails)
     }
   }
-  
+
   if (max_task_count > 0) {
     int task_limit = max_task_count;
     Apto::Array<int> task_counts = m_phenotype.GetCurTaskCount();
@@ -934,27 +936,88 @@ bool cOrganism::Divide_CheckViable(cAvidaContext& ctx)
             cStringUtil::Stringf("Organism performs more than MAX_TASK_COUNT tasks"));
       return false; //  (divide fails)
     }
- 
   }
   
-  if (single_reaction != 0) {
+  // Scenario 1: REQUIRE_SINGLE_REACTION == 1 - At least one reaction required
+  if (single_reaction == 1) {
     bool toFail = true;
     Apto::Array<int> reactionCounts = m_phenotype.GetCurReactionCount();
     for (int i=0; i<reactionCounts.GetSize(); i++) {
-      if (reactionCounts[i] > 0) toFail = false;
+      if (reactionCounts[i] > 0) {
+        toFail = false;
+        if (m_world->GetConfig().VERBOSITY.Get() >= 5) {
+          if (reactionCounts[i] > 0) {
+            cout << "H " << m_id << " REQUIRE_SINGLE_REACTION=1: found reaction id=" << i << ", divide allowed" << endl;
+          }
+        }
+      }
     }
     
     if (toFail) {
       const Apto::Array<int>& stolenReactions = m_phenotype.GetStolenReactionCount();
       for (int i = 0; i < stolenReactions.GetSize(); i++)
       {
-        if (stolenReactions[i] > 0) toFail = false;
+        if (stolenReactions[i] > 0) {
+          toFail = false;
+          if (m_world->GetConfig().VERBOSITY.Get() >= 5) {
+            if (stolenReactions[i] > 0) {
+              cout << "H " << m_id << " REQUIRE_SINGLE_REACTION=1: found stolen reaction id=" << i << ", divide allowed" << endl;
+            }
+          }
+        }
       }
     }
     
     if (toFail) {
       Fault(FAULT_LOC_DIVIDE, FAULT_TYPE_ERROR, cStringUtil::Stringf("Lacks any reaction required for divide"));
       return false; //  (divide fails)
+    }
+  }
+  
+  // Scenario 2: REQUIRE_SINGLE_REACTION == 2 - Use REQUIRED_REACTIONS bitmask
+  if (single_reaction == 2) {
+    bool has_required_reaction = false;
+    const int num_reactions = m_phenotype.GetCurReactionCount().GetSize();
+    
+    // Special case: "0" means any reaction is valid
+    if (required_reactions == "0") {
+      // Check if organism has performed at least one reaction
+      for (int i = 0; i < num_reactions; i++) {
+        if (m_phenotype.GetCurReactionCount()[i] > 0 || 
+            m_phenotype.GetStolenReactionCount()[i] > 0) {
+          has_required_reaction = true;
+          if (m_world->GetConfig().VERBOSITY.Get() >= 5) {
+            cout << "H " << m_id << "  REQUIRE_SINGLE_REACTION=2 REQUIRED_REACTIONS=" << required_reactions << ": found reaction id=" << i << ", divide allowed" << endl;
+          }
+          break;
+        }
+      }
+    } else {
+      // Parse binary string and check each bit position
+      const int bitmask_length = required_reactions.GetSize();
+      for (int bit_pos = 0; bit_pos < bitmask_length && bit_pos < num_reactions; bit_pos++) {
+        // Read bit from right to left (bit_pos 0 = rightmost character)
+        int char_index = bitmask_length - 1 - bit_pos;
+        char bit_char = required_reactions[char_index];
+        
+        if (bit_char == '1') {
+          // This reaction is required - check if organism performed it
+          if (m_phenotype.GetCurReactionCount()[bit_pos] > 0 || 
+              m_phenotype.GetStolenReactionCount()[bit_pos] > 0) {
+            has_required_reaction = true;
+            if (m_world->GetConfig().VERBOSITY.Get() >= 5) {
+              cout << "H " << m_id << " REQUIRED_REACTIONS=" << required_reactions << ", reaction id=" << bit_pos << ", divide allowed" << endl;
+            }
+            break; // Found at least one required reaction
+          }
+        }
+      }
+    }
+    
+    if (!has_required_reaction) {
+      Fault(FAULT_LOC_DIVIDE, FAULT_TYPE_ERROR,
+            cStringUtil::Stringf("Lacks required reaction from bitmask (%s)", (const char*)required_reactions));
+      return false; // (divide fails)
     }
   }
   

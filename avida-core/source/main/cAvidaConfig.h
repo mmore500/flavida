@@ -406,7 +406,8 @@ public:
   CONFIG_ADD_VAR(IMMUNITY_TASK, int, -1, "Task providing immunity from the required task");
   CONFIG_ADD_VAR(REQUIRED_REACTION, int, -1, "Reaction ID required for successful divide");
   CONFIG_ADD_VAR(IMMUNITY_REACTION, int, -1, "Reaction ID that provides immunity for successful divide");
-  CONFIG_ADD_VAR(REQUIRE_SINGLE_REACTION, int, 0, "If set to 1, at least one reaction is required for a successful divide");
+  CONFIG_ADD_VAR(REQUIRE_SINGLE_REACTION, int, 0, "0 = The reaction specified at REQUIRED_REACTION is required for a successful divide. 1 = At least one of the reactions defined in the environment.cfg file is required for a successful divide. 2 = At least one of the reactions defined in the REQUIRED_REACTIONS bitmask is required for a successful divide.");
+  CONFIG_ADD_VAR(REQUIRED_REACTIONS, cString, "0", "Binary string bitmask for required reactions when REQUIRE_SINGLE_REACTION=2. 0 = any reaction; 1 = reaction ID 0; 10 = reaction ID 1; 101 = reaction ID 0 or reaction ID 2, etc.");
   CONFIG_ADD_VAR(MAX_UNIQUE_TASK_COUNT, int, -1, "Division will fail if organism performs more than MAX_TASK_COUNT when MAX_TASK_COUNT >= 0");
   CONFIG_ADD_VAR(REQUIRED_BONUS, double, 0.0, "Required bonus to divide");
   CONFIG_ADD_VAR(REQUIRE_EXACT_COPY, int, 0, "Require offspring to be an exact copy (checked before divide mutations)\n0 = not required, neither for hosts nor parasites\n1 = only for hosts\n2 = only for parasites\n3 = for both, hosts and parasites");
