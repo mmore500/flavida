@@ -7129,6 +7129,20 @@ bool cHardwareCPU::Inst_HeadDivideMut(cAvidaContext& ctx, double mut_multiplier)
   if (child_end == 0) child_end = m_memory.GetSize();
   const int extra_lines = m_memory.GetSize() - child_end;
   bool ret_val = Divide_Main(ctx, divide_pos, extra_lines, mut_multiplier);
+  
+  // RO: Reset input buffers, pointers and stacks after divide attempt
+  if (m_world->GetConfig().DIVIDE_RESET.Get()) {
+    // Reset input pointers and clear buffers
+    m_organism->ResetInput();
+    
+    // Reset stacks for all threads
+    for (int i = 0; i < m_threads.GetSize(); i++) {
+      m_threads[i].stack.Clear();
+    }
+    // Reset global stack
+    m_global_stack.Clear();
+  }
+  
   // Re-adjust heads.
   AdjustHeads();
 
