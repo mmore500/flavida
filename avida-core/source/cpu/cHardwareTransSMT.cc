@@ -250,6 +250,12 @@ void cHardwareTransSMT::TraceMore() {
     cout << " " << cur_inst.AsString();
     cout << " t_u: " << hostPhenotype.GetTimeUsed();
 
+    // Print instruction pointer and heads
+    cout << " ip: " << IP().GetPosition();
+    cout << " heads:";
+    for(int i=0; i < nHardware::NUM_HEADS; i++)
+      cout << " " << GetHead(i).GetPosition();
+
     // Get taks and reaction count vars
     Apto::Array<int> last_tasks = hostPhenotype.GetLastTaskCount();
     Apto::Array<int> cur_tasks = hostPhenotype.GetCurTaskCount();
@@ -386,6 +392,15 @@ void cHardwareTransSMT::TraceMore() {
     // Print next label
     cout << " lbl: " << m_threads[m_cur_thread].next_label.AsString();
     cout << endl;
+
+    //Print mem spaces
+    for(int i = 0; i < m_mem_array.GetSize(); i++) {
+      cout << " MemSpace " << i << ": ";
+      for(int j = 0; j < m_mem_array[i].GetSize(); j++) {
+        cout << m_mem_array[i][j].AsString();
+      }
+      cout << endl;
+    }
 }
 
 // This function processes the very next command in the genome, and is made
@@ -963,6 +978,25 @@ bool cHardwareTransSMT::InjectParasite(cAvidaContext &ctx, double mut_multiplier
     {
       m_organism->Die(ctx);
     }
+  }
+
+    // RO: Reset input pointer, buffers, stacks and heads after injection attempt
+  if((m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() || m_world->GetConfig().ANALYZE_MODE.Get()) &&
+    m_world->GetConfig().INJECT_RESET.Get() && ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
+  {
+    // Reset input buffers
+    m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);
+
+    // Reset output buffers
+    m_organism->ClearOutput(ThreadGetOwner()->UnitSource().transmission_type);
+
+    // Reset stacks
+    for (int i = 0; i < NUM_STACKS; i++)
+      Stack(i).Clear();
+
+    // Reset heads
+    for (int x = 0; x < nHardware::NUM_HEADS; x++)
+      GetHead(x).Reset(this, IP().GetMemSpace());
   }
 
   AdvanceIP() = false;
@@ -2072,19 +2106,7 @@ bool cHardwareTransSMT::Inst_Inject(cAvidaContext &ctx)
   }
 
   double mut_multiplier = 1.0;
-  bool inject_signal = InjectParasite(ctx, mut_multiplier);
-
-  // RO: Reset input buffers and local stacks
-  if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && m_world->GetConfig().INJECT_RESET.Get() && ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
-  {
-    // Reset input buffers
-    m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);
-    // Reset stacks
-    for (int i = 0; i < NUM_STACKS; i++)
-      Stack(i).Clear();
-  }
-
-  return inject_signal;
+  return InjectParasite(ctx, mut_multiplier);
 }
 
 // 38
@@ -2222,45 +2244,105 @@ bool cHardwareTransSMT::Inst_Divide_Asex_Wait(cAvidaContext &ctx)
 
 bool cHardwareTransSMT::Inst_Divide_Erase(cAvidaContext &ctx)
 {
+  const int write_head_pos = GetHead(nHardware::HEAD_WRITE).GetPosition();
   bool toReturn = Divide_Main(ctx);
+  bool parasite_uses_own_buffers = m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get();
+  // RO: Inst_Divide_Erase behavior depends on whether parasites have their own buffers or share with host
+  if(!parasite_uses_own_buffers){
+    // Shared buffers between host and parasite
+    if(toReturn) {
+      // On divide success, nothing special to do and return true
+      return true;
+    } else {
+      // On divide failure, do genuine reset and return true/false based on genuine code behavior
+      Genuine_DivideReset(ctx);
+      m_organism->GetPhenotype().DivideFailed();
+      return false;
+    }
+  } else {
+    // Parasites have their own buffers
+    bool child_viable = Check_DivisionLengthViability( m_mem_array[0].GetSize() - 1, write_head_pos);
+    bool divide_host_reset = m_world->GetConfig().DIVIDE_HOST_RESET.Get();
+    bool inject_reset = m_world->GetConfig().INJECT_RESET.Get();
+    Avida::Systematics::TransmissionType transmission = ThreadGetOwner()->UnitSource().transmission_type;
 
-  // RO: Reset input buffers and local stacks
-  if (m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && 
-      (
-        (m_world->GetConfig().DIVIDE_HOST_RESET.Get() &&
-         ThreadGetOwner()->UnitSource().transmission_type == Systematics::DIVISION) ||
-
-        (m_world->GetConfig().ANALYZE_MODE.Get() &&
-         m_world->GetConfig().INJECT_RESET.Get() &&
-         ThreadGetOwner()->UnitSource().transmission_type == Systematics::HORIZONTAL)
-      ))
-  {
-    // Reset input pointer
-    m_organism->ResetInput(ThreadGetOwner()->UnitSource().transmission_type);
-    // Reset stacks
-    for (int i = 0; i < NUM_LOCAL_STACKS; i++)
-      Stack(i).Clear();
-  }
-
-  if (toReturn)
+    // Case:  Partial reset on divide success
+    if(toReturn &&
+      (divide_host_reset && transmission == Systematics::DIVISION) ||
+      (inject_reset && transmission == Systematics::HORIZONTAL) && !m_world->GetConfig().ANALYZE_MODE.Get()
+    ) {
+      Partial_DivideReset(ctx);
+    }
+    // Case: Full reset on divide failure
+    if (!toReturn && child_viable && (
+      (divide_host_reset && transmission == Systematics::DIVISION) ||
+      (inject_reset && transmission == Systematics::HORIZONTAL)
+    )) {
+      Full_DivideReset(ctx);
+      m_organism->GetPhenotype().DivideFailed();
+    }
     return toReturn;
+  }
+}
 
+void cHardwareTransSMT::Genuine_DivideReset(cAvidaContext &ctx) {
   // internalReset();
-
-  m_organism->GetPhenotype().DivideFailed();
-
+  
   const int mem_space_used = GetHead(nHardware::HEAD_WRITE).GetMemSpace();
 
-  if (m_mem_array.GetSize() <= mem_space_used)
-    return false;
+  if (m_mem_array.GetSize() <= mem_space_used) {
+    return;
+  }
 
   m_mem_array[mem_space_used] = InstructionSequence("a");
 
   for (int x = 0; x < nHardware::NUM_HEADS; x++)
     GetHead(x).Reset(this, 0);
   // for(int x = 0; x < NUM_LOCAL_STACKS; x++) Stack(x).Clear();
+}
 
-  return toReturn;
+void cHardwareTransSMT::Full_DivideReset(cAvidaContext &ctx) {
+    Avida::Systematics::TransmissionType transmission = ThreadGetOwner()->UnitSource().transmission_type;
+    // Reset input pointer and input buffer
+    m_organism->ResetInput(transmission);
+  
+    // Reset output buffer
+    m_organism->ClearOutput(transmission);
+
+    // Reset stacks
+    for (int i = 0; i < NUM_STACKS; i++)
+      Stack(i).Clear();
+      
+    // Clear mem space used for offspring
+    const int mem_space_used = GetHead(nHardware::HEAD_WRITE).GetMemSpace();
+    m_mem_array[mem_space_used] = InstructionSequence("a");
+
+    // Reset heads
+    for( int x = 0; x < nHardware::NUM_HEADS; x++)
+      GetHead(x).Reset(this, 0); 
+
+    // Reset IP to beginning of genome
+    IP().Set(0, IP().GetMemSpace());
+
+    // Block IP advance
+    AdvanceIP() = false;
+
+    // Reset task countS
+    m_organism->GetPhenotype().ClearCurTaskCount();
+    m_organism->GetPhenotype().ClearEffTaskCount();
+}
+
+void cHardwareTransSMT::Partial_DivideReset(cAvidaContext &ctx) {
+  Avida::Systematics::TransmissionType transmission = ThreadGetOwner()->UnitSource().transmission_type;
+  // Reset input pointer and input buffer
+    m_organism->ResetInput(transmission);
+  
+    // Reset output buffer
+    m_organism->ClearOutput(transmission);
+
+    // Reset stacks
+    for (int i = 0; i < NUM_STACKS; i++)
+      Stack(i).Clear();
 }
 
 bool cHardwareTransSMT::Inst_Collect_Unit(cAvidaContext &ctx)

@@ -903,7 +903,7 @@ void cHardwareCPU::SetupMiniTraceFileHeader(Avida::Output::File& df, const int g
 
 void cHardwareCPU::TraceMore() {
   // Do not print output for TestCPU
-  if (m_organism->GetCellID() == -1) return;
+  if (m_organism->GetCellID() == -1 && !m_world->GetConfig().ANALYZE_MODE.Get()) return;
 
   // Get current instruction
   const Instruction cur_inst = IP().GetInst();
@@ -918,94 +918,84 @@ void cHardwareCPU::TraceMore() {
   int output_offset;
   Systematics::TransmissionType  transmission_type;
 
-  if(m_cur_thread == 1) {
-    // Get inputs and buffers for parasite
-    cout << "P";
-    if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get()) {
-      input_buffer = m_organism->GetInputBufParasites();
-      input_offset = m_organism->GetInputBufferOffsetParasites();
-      output_buffer = m_organism->GetOutputBufParasites();
-      output_offset = m_organism->GetOutputtBufferOffsetParasites();
-    } else {
-      input_buffer = m_organism->GetInputBuf();
-      input_offset = m_organism->GetInputBufferOffset();
-      output_buffer = m_organism->GetOutputBuf();
-      output_offset = m_organism->GetOutputBufferOffset();
+  // Get inputs and buffers for hosts
+  cout << "Org";
+  input_buffer = m_organism->GetInputBuf();
+  input_offset = m_organism->GetInputBufferOffset();
+  output_buffer = m_organism->GetOutputBuf();
+  output_offset = m_organism->GetOutputBufferOffset();
+  transmission_type = Systematics::DIVISION;
+
+  // Print organism ID and current instruction
+  cout << " " << m_organism->GetID();
+  cout << " " << cur_inst.AsString();
+  cout << " t_u: " << hostPhenotype.GetTimeUsed();
+
+  // Print registers
+  cout << " AX: " << GetRegister(REG_AX);
+  cout << " BX: " << GetRegister(REG_BX);
+  cout << " CX: " << GetRegister(REG_CX);
+
+  // Print IP and head positions
+  cout << " ip: " << IP().GetPosition();
+  for(int i=0; i < nHardware::NUM_HEADS; i++)
+    cout << " h" << i << ": " << GetHead(i).GetPosition();
+
+  // Get taks and reaction count vars
+  Apto::Array<int> last_tasks = hostPhenotype.GetLastTaskCount();
+  Apto::Array<int> cur_tasks = hostPhenotype.GetCurTaskCount();
+  Apto::Array<int> eff_tasks = hostPhenotype.GetEffTaskCount();
+  Apto::Array<int> last_reaction = hostPhenotype.GetLastReactionCount();
+  Apto::Array<int> cur_reaction = hostPhenotype.GetCurReactionCount();
+
+  // Get host resource count
+  cResourceCount* res_count = m_organism->GetOrgInterface().GetResourceCount();
+
+  // Print last_task_count
+  if(last_tasks.GetSize() > 0) {
+    cout << " l_t: ";
+    for (int i = 0; i < last_tasks.GetSize(); i++) {
+      std::cout << "." <<  last_tasks[i];
     }
-    transmission_type = Systematics::HORIZONTAL;
-  } else {
-    // Get inputs and buffers for hosts
-    cout << "H";
-    input_buffer = m_organism->GetInputBuf();
-    input_offset = m_organism->GetInputBufferOffset();
-    output_buffer = m_organism->GetOutputBuf();
-    output_offset = m_organism->GetOutputBufferOffset();
-    transmission_type = Systematics::DIVISION;
+    std::cout << ".";
   }
-    cout << " " << m_organism->GetID();
-    cout << " " << cur_inst.AsString();
-    cout << " t_u: " << hostPhenotype.GetTimeUsed();
 
-    // Get taks and reaction count vars
-    Apto::Array<int> last_tasks = hostPhenotype.GetLastTaskCount();
-    Apto::Array<int> cur_tasks = hostPhenotype.GetCurTaskCount();
-    Apto::Array<int> eff_tasks = hostPhenotype.GetEffTaskCount();
-    Apto::Array<int> last_reaction = hostPhenotype.GetLastReactionCount();
-    Apto::Array<int> cur_reaction = hostPhenotype.GetCurReactionCount();
-
-    cResourceCount* res_count = m_organism->GetOrgInterface().GetResourceCount();
-
-    Apto::Array<int> host_last_tasks = hostPhenotype.GetLastHostTaskCount();
-    Apto::Array<int> host_cur_tasks = hostPhenotype.GetCurHostTaskCount();
-
-    Apto::Array<int> para_last_tasks = hostPhenotype.GetLastParasiteTaskCount();
-    Apto::Array<int> para_cur_tasks = hostPhenotype.GetCurParasiteTaskCount();
-
-    // Print last_task_count
-    if(last_tasks.GetSize() > 0) {
-      cout << " l_t: ";
-      for (int i = 0; i < last_tasks.GetSize(); i++) {
-        std::cout << "." <<  last_tasks[i];
-      }
-      std::cout << ".";
+  // Print current task count
+  if(cur_tasks.GetSize() > 0) {
+    cout << " c_t: ";
+    for (int i = 0; i < cur_tasks.GetSize(); i++) {
+      std::cout << "." <<  cur_tasks[i];
     }
+    std::cout << ".";
+  }
 
-    // Print current task count
-    if(cur_tasks.GetSize() > 0) {
-      cout << " c_t: ";
-      for (int i = 0; i < cur_tasks.GetSize(); i++) {
-        std::cout << "." <<  cur_tasks[i];
-      }
-      std::cout << ".";
+  // Print effective task count
+  if(eff_tasks.GetSize() > 0) {
+    cout << " eff_t: ";
+    for (int i = 0; i < eff_tasks.GetSize(); i++) {
+      std::cout << "." <<  eff_tasks[i];
     }
+    std::cout << ".";
+  }
 
-    // Print effective task count
-    if(eff_tasks.GetSize() > 0) {
-      cout << " eff_t: ";
-      for (int i = 0; i < eff_tasks.GetSize(); i++) {
-        std::cout << "." <<  eff_tasks[i];
-      }
-      std::cout << ".";
+  // Print last reaction count
+  if(last_reaction.GetSize() > 0) {
+    cout << " l_r: ";
+    for (int i = 0; i < last_reaction.GetSize(); i++) {
+      std::cout << "." <<  last_reaction[i];
     }
+    std::cout << ".";
+  }
 
-    // Print last reaction count
-    if(last_reaction.GetSize() > 0) {
-      cout << " l_r: ";
-      for (int i = 0; i < last_reaction.GetSize(); i++) {
-        std::cout << "." <<  last_reaction[i];
-      }
-      std::cout << ".";
+  // Print current reaction count
+  if(cur_reaction.GetSize() > 0) {
+    cout << " c_r: ";
+    for (int i = 0; i < cur_reaction.GetSize(); i++) {
+      std::cout << "." <<  cur_reaction[i];
     }
-
-    // Print current reaction count
-    if(cur_reaction.GetSize() > 0) {
-      cout << " c_r: ";
-      for (int i = 0; i < cur_reaction.GetSize(); i++) {
-        std::cout << "." <<  cur_reaction[i];
-      }
-      std::cout << ".";
-    }
-
+    std::cout << ".";
+  }
+  if( !m_world->GetConfig().ANALYZE_MODE.Get()) {
     // Print global resources
     if (res_count->ReadResources().GetSize() > 0) {
       std::cout << " g_r: ";
@@ -1013,71 +1003,41 @@ void cHardwareCPU::TraceMore() {
         std::cout << "[" << res_count->ReadResources()[i] << "]";
       }
     }
-    
+  }
 
-    // Print last task count (only hosts)
-    if(host_last_tasks.GetSize() > 0) {
-      cout << " h_l_t: ";
-      for (int i = 0; i < host_last_tasks.GetSize(); i++) {
-        std::cout << "." <<  host_last_tasks[i];
-      }
-      std::cout << ".";
-    }
+  // Print inputs pointer
+  cout << " in:";
+  for(int i=0; i < 3; i++)
+    cout << " " << m_organism->GetInputAtPointer(i);
+  cout << " ptr: " << m_organism->GetInputPointer(transmission_type);
 
-    // Print current task count (only hosts)
-    if(host_cur_tasks.GetSize() > 0) {
-      cout << " h_c_t: ";
-      for (int i = 0; i < host_cur_tasks.GetSize(); i++) {
-        std::cout << "." <<  host_cur_tasks[i];
-      }
-      std::cout << ".";
-    }
+  // Print input buffer
+  cout << " in_b";
+  for(int i=0; i < input_buffer.GetNumStored(); i++)
+    cout << " " << input_buffer[i];
 
-    // Print last task count (only parasites)
-    if(para_last_tasks.GetSize() > 0) {
-      cout << " p_l_t: ";
-      for (int i = 0; i < para_last_tasks.GetSize(); i++) {
-        std::cout << "." <<  para_last_tasks[i];
-      }
-      std::cout << ".";
-    }
+  // Print input offset
+  cout << " off: " << input_offset;
 
-    // Print last current count (only hosts)
-    if(para_cur_tasks.GetSize() > 0) {
-      cout << " p_c_t: ";
-      for (int i = 0; i < para_cur_tasks.GetSize(); i++) {
-        std::cout << "." <<  para_cur_tasks[i];
-      }
-      std::cout << ".";
-    }
+  // Print output bufer
+  cout << " ou_b";
+  for(int i=0; i < output_buffer.GetNumStored(); i++)
+    cout << " " << output_buffer[i];
 
-    // Print inputs pointer
-    cout << " in:";
-    for(int i=0; i < 3; i++)
-      cout << " " << m_organism->GetInputAtPointer(i);
-    cout << " ptr: " << m_organism->GetInputPointer(transmission_type);
+  // Print output offset
+  cout << " off: " << output_offset;
 
-    // Print input buffer
-    cout << " in_b";
-    for(int i=0; i < input_buffer.GetNumStored(); i++)
-      cout << " " << input_buffer[i];
+  // Print stacks
+  cout << " stack:";
+    cout << " " << m_threads[0].stack.Peek();
 
-    // Print input offset
-    cout << " off: " << input_offset;
+  cout << endl;
 
-    // Print output bufer
-    cout << " ou_b";
-    for(int i=0; i < output_buffer.GetNumStored(); i++)
-      cout << " " << output_buffer[i];
-
-    // Print output offset
-    cout << " off: " << output_offset;
-
-    // Print stacks
-    cout << " stack:";
-      cout << " " << m_threads[0].stack.Peek();
-
-    cout << endl;
+  // Print memory dump
+  cout << "Memory: ";
+  for(int i = 0; i < m_memory.GetSize(); i++)
+    cout << m_memory[i].AsString();
+  cout << endl;
 }
 
 // This function processes the very next command in the genome, and is made
@@ -7128,21 +7088,69 @@ bool cHardwareCPU::Inst_HeadDivideMut(cAvidaContext& ctx, double mut_multiplier)
   int child_end =  getHead(nHardware::HEAD_WRITE).GetPosition();
   if (child_end == 0) child_end = m_memory.GetSize();
   const int extra_lines = m_memory.GetSize() - child_end;
+  bool child_viable = Check_DivisionLengthViability(divide_pos, m_memory.GetSize() - divide_pos - extra_lines);
   bool ret_val = Divide_Main(ctx, divide_pos, extra_lines, mut_multiplier);
-  
-  // RO: Reset input buffers, pointers and stacks after divide attempt
-  if (m_world->GetConfig().DIVIDE_RESET.Get()) {
-    // Reset input pointers and clear buffers
+  // RO: Reset input pointer, buffers, stacks, heads, instruction pointer and staks on divide failrues
+  if (m_world->GetConfig().DIVIDE_RESET.Get() && child_viable && !ret_val) {
+    // Reset input pointer and input buffer
     m_organism->ResetInput();
-    
+
+    // Reset output buffer
+    m_organism->ClearOutput();
+
     // Reset stacks for all threads
     for (int i = 0; i < m_threads.GetSize(); i++) {
       m_threads[i].stack.Clear();
     }
-    // Reset global stack
+
+    // Reset global stackS
     m_global_stack.Clear();
+
+    // Clear and resize memory to pre-division size
+    m_memory.Resize(child_end - divide_pos);
+
+    // Reset registers
+    for(int r = 0; r < NUM_REGISTERS; r++)
+     m_threads[m_cur_thread].reg[r] = 0;
+
+    // Reset allocate flag
+    m_mal_active = false;
+    
+    // Reset heads
+    for (int x = 0; x < nHardware::NUM_HEADS; x++)
+      GetHead(x).Reset(this, 0);
+
+    // Reset IP to beginning of genome
+    const int mem_space_used = IP().GetMemSpace();
+    IP().Set(0, mem_space_used);
+
+    m_advance_ip = false;
+
+    // Reset task countS
+    m_organism->GetPhenotype().ClearCurTaskCount();
+    m_organism->GetPhenotype().ClearEffTaskCount();
+
+    return false;
   }
-  
+
+  // RO: Reset input pointer, buffers and stacks on divide success
+  if (m_world->GetConfig().DIVIDE_RESET.Get() && ret_val && !m_world->GetConfig().ANALYZE_MODE.Get()) {
+    // Reset input pointer and input buffer
+    m_organism->ResetInput();
+
+    // Reset output buffer
+    m_organism->ClearOutput();
+
+    // Reset stacks for all threads
+    for (int i = 0; i < m_threads.GetSize(); i++) {
+      m_threads[i].stack.Clear();
+    }
+
+    // Reset global stackS
+    m_global_stack.Clear();
+
+  }
+
   // Re-adjust heads.
   AdjustHeads();
 
@@ -7150,7 +7158,7 @@ bool cHardwareCPU::Inst_HeadDivideMut(cAvidaContext& ctx, double mut_multiplier)
   if (m_world->GetConfig().TOLERANCE_WINDOW.Get() && ret_val) {
 	  GetRegister(REG_BX) = (int) m_organism->GetPhenotype().BornParentGroup();
   }
-  
+
   return ret_val; 
 }
 

@@ -137,6 +137,43 @@ int cHardwareBase::calcExecutedSize(const int parent_size)
   return executed_size;
 }
 
+// RO: Check that parent and child sizes are viable based on genome size and config settings
+bool cHardwareBase::Check_DivisionLengthViability(const int parent_size, const int child_size) const
+{
+  // Get genome size from organism
+  const Genome& genome = m_organism->GetGenome();
+  ConstInstructionSequencePtr seq_p;
+  ConstGeneticRepresentationPtr rep_p = genome.Representation();
+  seq_p.DynamicCastFrom(rep_p);
+  const InstructionSequence& seq = *seq_p;
+  const int genome_size = seq.GetSize();
+
+  // Make sure that neither parent nor child will be below the minimum size range
+  const double size_range = m_world->GetConfig().OFFSPRING_SIZE_RANGE.Get();
+  const int min_size = Apto::Max(MIN_GENOME_LENGTH, static_cast<int>(genome_size / size_range));
+  const int max_size = Apto::Min(MAX_GENOME_LENGTH, static_cast<int>(genome_size * size_range));
+
+  if (child_size < min_size || child_size > max_size) {
+    return false;
+  }
+  if (parent_size < min_size || parent_size > max_size) {
+    return false;
+  }
+
+  // Absolute minimum and maximum child/parent size limits
+  const int max_genome_size = m_world->GetConfig().MAX_GENOME_SIZE.Get();
+  const int min_genome_size = m_world->GetConfig().MIN_GENOME_SIZE.Get();
+  if ( (min_genome_size && (child_size < min_genome_size)) || (max_genome_size && (child_size > max_genome_size)) ) {
+    return false;
+  }
+
+  if ( (min_genome_size && (parent_size < min_genome_size)) || (max_genome_size && (parent_size > max_genome_size)) ) {
+    return false;
+  }
+
+  return true;
+}
+
 bool cHardwareBase::Divide_CheckViable(cAvidaContext& ctx, const int parent_size, const int child_size, bool using_repro)
 {
 #define ORG_FAULT(error) if (ctx.OrgFaultReporting()) m_organism->Fault(FAULT_LOC_DIVIDE, FAULT_TYPE_ERROR, error)
@@ -288,7 +325,6 @@ bool cHardwareBase::Divide_CheckViable(cAvidaContext& ctx, const int parent_size
   if(!phenotype.IsFertile()) {
     return false;
   }
-  
   return true; // (divide succeeds!)
 #undef ORG_FAULT
 }
