@@ -253,6 +253,11 @@ public:
   // RO: Print debug info before executing current instruction
   void TraceMore();
 
+  // Divide Helper Methods
+  void Genuine_DivideReset(cAvidaContext &ctx);
+  void Full_DivideReset(cAvidaContext &ctx);
+  void Partial_DivideReset(cAvidaContext &ctx);
+
 private:
   // ---------- Instruction Library -----------
 

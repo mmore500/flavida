@@ -1552,7 +1552,7 @@ bool cPhenotype::TestOutput(cAvidaContext& ctx, cTaskContext& taskctx,
       // Update parasite/host task tracking appropriately
       if (is_parasite) {
         cur_para_tasks[i]++;
-        if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 0) {
+        if(m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() == 0 || m_world->GetConfig().ANALYZE_MODE.Get()) {
           cur_task_count[i]++;
           eff_task_count[i]++;
         }

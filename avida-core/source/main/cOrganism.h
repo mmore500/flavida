@@ -334,6 +334,15 @@ public:
     }
 
   }
+  void ClearOutput() { m_output_buf.Clear(); }
+  void ClearOutput(Systematics::TransmissionType transmission_type) {
+    //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
+    if (m_world->GetConfig().HARDWARE_TYPE.Get() == HARDWARE_TYPE_CPU_TRANSSMT && m_world->GetConfig().PARASITES_USE_OWN_BUFFERS.Get() && transmission_type == Systematics::HORIZONTAL) {
+      m_output_buf_parasites.Clear();
+    } else {
+      ClearOutput();
+    }
+  }
   void AddOutput(int val) { m_output_buf.Add(val); }
   void AddOutput(int val, Systematics::TransmissionType transmission_type) {
     //RO: parasites use their own buffers only when hardware cpu type is TRANSSMT.
