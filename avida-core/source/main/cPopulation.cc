@@ -894,7 +894,7 @@ bool cPopulation::ActivateOffspring(cAvidaContext& ctx, const Genome& offspring_
     offspring_array[i]->SetParentFT(parent_organism->GetForageTarget());
     // and some rebirth stuff
     offspring_array[i]->SetParentMerit(parent_organism->GetPhenotype().GetMerit().GetDouble());
-    offspring_array[i]->SetParentMultiThreaded(parent_organism->GetPhenotype().IsMultiThread());    
+    offspring_array[i]->SetParentMultiThreaded(parent_organism->GetPhenotype().IsMultiThread());
   }
   
   // If we're not about to kill the parent, do some extra work on it.
@@ -946,7 +946,7 @@ bool cPopulation::ActivateOffspring(cAvidaContext& ctx, const Genome& offspring_
       }
     }
   }
-  
+ 
   // Do any statistics on the parent that just gave birth...
   parent_organism->HandleGestation();
   
@@ -980,6 +980,12 @@ bool cPopulation::ActivateOffspring(cAvidaContext& ctx, const Genome& offspring_
     }
   }
   if (m_world->GetConfig().DIVIDE_METHOD.Get() == DIVIDE_METHOD_SPLIT && parent_alive && m_world->GetConfig().RESET_INPUTS_ON_DIVIDE.Get()) TestForMiniTrace(parent_organism);
+  
+  // RO: HGT tracking and dump
+  if (parent_alive == true) {
+    parent_organism->GetPhenotype().ClearOffspringHgtTransformation();
+  }
+  
   return parent_alive;
 }
 
@@ -2438,11 +2444,13 @@ void cPopulation::KillOrganism(cPopulationCell& in_cell, cAvidaContext& ctx, boo
   // this organism's genome needs to be split up into fragments
   // and deposited in its cell.  We then also have to add the size of this genome to
   // the HGT resource.
+  // RO: HGT tracking and dump - Add metadata to fragments (donor_id, process_type='T' for Transformation)
   if (m_world->GetConfig().ENABLE_HGT.Get()
       && (m_world->GetConfig().HGT_COMPETENCE_P.Get() > 0.0)) {
     ConstInstructionSequencePtr seq;
     seq.DynamicCastFrom(organism->GetGenome().Representation());
-    in_cell.AddGenomeFragments(ctx, *seq);
+    int donor_id = organism->GetID();
+    in_cell.AddGenomeFragments(ctx, *seq, donor_id, 'T');
   }
   
   // And clear it!

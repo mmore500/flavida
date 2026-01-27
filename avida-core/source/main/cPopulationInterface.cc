@@ -38,6 +38,8 @@
 
 #include "cReactionResult.h"
 
+#include "cGenomeUtil.h"
+
 #include <cassert>
 #include <algorithm>
 #include <iterator>
@@ -1041,6 +1043,8 @@ void cPopulationInterface::DoHGTDonation(cAvidaContext& ctx) {
 		}
 	}
 	assert(target != 0);
+	// RO: HGT tracking and dump
+	int donor_id = GetOrganism()->GetID();
 	fragment_list_type fragments;
   ConstInstructionSequencePtr seq;
   seq.DynamicCastFrom(GetOrganism()->GetGenome().Representation());
@@ -1049,7 +1053,10 @@ void cPopulationInterface::DoHGTDonation(cAvidaContext& ctx) {
 													 m_world->GetConfig().HGT_FRAGMENT_SIZE_VARIANCE.Get(),
 													 *seq,
 													 fragments);
-	target->GetOrganism()->GetOrgInterface().ReceiveHGTDonation(fragments[ctx.GetRandom().GetInt(fragments.size())]);
+	// Select a random fragment and create HGTFragment with metadata (process_type = 'C' for Conjugation)
+	InstructionSequence selected_seq = fragments[ctx.GetRandom().GetInt(fragments.size())];
+	cGenomeUtil::HGTFragment hgt_fragment(selected_seq, donor_id, 'C');
+	target->GetOrganism()->GetOrgInterface().ReceiveHGTDonation(hgt_fragment);
 }
 
 
@@ -1074,6 +1081,7 @@ void cPopulationInterface::DoHGTConjugation(cAvidaContext& ctx) {
 				// nothing to do here, there are no neighbors
 				return;
 			}
+
 			std::set<cPopulationCell*>::iterator selected=occupied_cell_set.begin();
 			std::advance(selected, ctx.GetRandom().GetInt(occupied_cell_set.size()));
 			source = *selected;
@@ -1094,6 +1102,8 @@ void cPopulationInterface::DoHGTConjugation(cAvidaContext& ctx) {
 		}
 	}
 	assert(source != 0);
+	// RO: HGT tracking and dump - Create HGTFragment with metadata
+	int donor_id = source->GetOrganism()->GetID();
 	fragment_list_type fragments;
   ConstInstructionSequencePtr seq;
   seq.DynamicCastFrom(source->GetOrganism()->GetGenome().Representation());
@@ -1102,7 +1112,10 @@ void cPopulationInterface::DoHGTConjugation(cAvidaContext& ctx) {
 													 m_world->GetConfig().HGT_FRAGMENT_SIZE_VARIANCE.Get(),
 													 *seq,
 													 fragments);
-	ReceiveHGTDonation(fragments[ctx.GetRandom().GetInt(fragments.size())]);	
+	// Select a random fragment and create HGTFragment with metadata (process_type = 'C' for Conjugation)
+	InstructionSequence selected_seq = fragments[ctx.GetRandom().GetInt(fragments.size())];
+	cGenomeUtil::HGTFragment hgt_fragment(selected_seq, donor_id, 'C');
+	ReceiveHGTDonation(hgt_fragment);	
 }
 
 
@@ -1115,8 +1128,12 @@ void cPopulationInterface::DoHGTConjugation(cAvidaContext& ctx) {
  is called.
  */
 void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) {
+  int cell_id = GetOrganism()->GetCellID();
+  if (cell_id < 0) {
+      // this organism is not in a cell, so HGT can't happen.
+      return;
+  }
 	InitHGTSupport();
-	
 	// first, gather up all the fragments that we're going to be inserting into this offspring:
 	// these come from a per-replication conjugational event:
 	if((m_world->GetConfig().HGT_CONJUGATION_P.Get() > 0.0)
@@ -1126,7 +1143,9 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
 	
 	// the pending list includes both the fragments selected via the above process,
 	// as well as from population-level conjugational events (see cPopulationActions.cc:cActionAvidianConjugation).
-	fragment_list_type& fragments = m_hgt_support->_pending;
+
+	// RO: HGT tracking and dump
+	hgt_fragment_list_type& fragments = m_hgt_support->_pending;
 
 	// these come from "natural" competence (ie, eating the dead):
 	if((m_world->GetConfig().HGT_COMPETENCE_P.Get() > 0.0)
@@ -1146,7 +1165,9 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
 				cell.ClearFragments(ctx);
         ConstInstructionSequencePtr seq;
         seq.DynamicCastFrom(cell.GetOrganism()->GetGenome().Representation());
-				cell.AddGenomeFragments(ctx,*seq);
+				// RO: HGT tracking and dump - Add parent genome as transformation fragments
+				int parent_id = cell.GetOrganism()->GetID();
+				cell.AddGenomeFragments(ctx, *seq, parent_id, 'T');
 				break;
 			}
 			default: { // error
@@ -1160,11 +1181,10 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
 		if(cell.CountGenomeFragments() > 0) {
 			// add a randomly-selected fragment to the list of fragments to be HGT'd,
 			// remove it from the cell, and adjust the level of HGT resource.
-			fragment_list_type::iterator selected=cell.GetFragments().begin();
-			std::advance(selected, ctx.GetRandom().GetInt(cell.GetFragments().size()));
-			fragments.insert(fragments.end(), *selected);			
-			m_world->GetPopulation().AdjustHGTResource(ctx, -selected->GetSize());
-			cell.GetFragments().erase(selected);
+			// RO: HGT tracking and dump - Pop HGTFragment instead of InstructionSequence
+			cGenomeUtil::HGTFragment selected_fragment = cell.PopGenomeFragment(ctx);
+			fragments.push_back(selected_fragment);			
+			m_world->GetPopulation().AdjustHGTResource(ctx, -selected_fragment.sequence.GetSize());
 		}
 	}
 	
@@ -1173,8 +1193,15 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
   GeneticRepresentationPtr offspring_rep_p = offspring.Representation();
   offspring_seq_p.DynamicCastFrom(offspring_rep_p);
   InstructionSequence& offspring_seq = *offspring_seq_p;
-  
-	for(fragment_list_type::iterator i=fragments.begin(); i!=fragments.end(); ++i) {
+	
+	// RO: HGT tracking and dump - Track last HGT fragment for phenotype
+	cGenomeUtil::HGTFragment last_hgt_fragment;
+  // Clear any previous HGT info in parent's phenotyp
+  cOrganism* parent_organism = GetOrganism();
+  cPhenotype& parent_phenotype = parent_organism->GetPhenotype();
+  parent_phenotype.SetHasOffspringHgtConjugation(false);
+  parent_phenotype.SetHasOffspringHgtTransformation(false);
+	for(hgt_fragment_list_type::iterator i=fragments.begin(); i!=fragments.end(); ++i) {
 		cGenomeUtil::substring_match location;
 		switch(m_world->GetConfig().HGT_FRAGMENT_SELECTION.Get()) {
 			case 0: { // match placement
@@ -1209,8 +1236,8 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
 			}
 			case 2: { // replace the instructions in the fragment with random instructions.
 				const cInstSet& instset = m_world->GetHardwareManager().GetInstSet(offspring.Properties().Get("instset").StringValue());
-				for(int j=0; j<i->GetSize(); ++j) {
-					(*i)[j] = instset.GetRandomInst(ctx);
+				for(int j=0; j<i->sequence.GetSize(); ++j) {
+					i->sequence[j] = instset.GetRandomInst(ctx);
 				}
 				break;
 			}
@@ -1225,15 +1252,35 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
 		// be extended in the same way as fragment selection if need be.
 		if(ctx.GetRandom().P(m_world->GetConfig().HGT_INSERTION_MUT_P.Get())) {
 			// insert the fragment just after the final location:
-			offspring_seq.Insert(location.end, *i);
+			offspring_seq.Insert(location.end, i->sequence);
 		} else {
 			// replacement: replace [begin,end) instructions in the genome with the fragment,
 			// respecting circularity.
-			offspring_seq.Replace(*i, location.begin, location.end);
+			offspring_seq.Replace(i->sequence, location.begin, location.end);
 		}
 		
+		last_hgt_fragment = *i;
+
+    if (fragments.size() > 1)
+      int aaa = 0;
+
+    // RO: HGT tracking and dump
+    if(last_hgt_fragment.process_type == 'T') {
+      // Thi is a transformation fragment
+      parent_phenotype.SetOffspringHgtTransformationDonorID(last_hgt_fragment.donor_id);
+      parent_phenotype.SetOffspringHgtTransformationFragment(last_hgt_fragment.sequence);
+      parent_phenotype.SetHasOffspringHgtTransformation(true);
+    }
+
+    if (last_hgt_fragment.process_type == 'C') {
+      // This is a conjugation fragment
+      parent_phenotype.SetOffspringHgtConjugationDonorID(last_hgt_fragment.donor_id);
+      parent_phenotype.SetOffspringHgtConjugationFragment(last_hgt_fragment.sequence);
+      parent_phenotype.SetHasOffspringHgtConjugation(true);
+    }
+
 		// stats tracking:
-		m_world->GetStats().GenomeFragmentInserted(GetOrganism(), *i, location);
+		m_world->GetStats().GenomeFragmentInserted(GetOrganism(), i->sequence, location);
 	}
 	
 	// clean-up; be sure to empty the pending list so that we don't end up doing an HGT
@@ -1244,14 +1291,13 @@ void cPopulationInterface::DoHGTMutation(cAvidaContext& ctx, Genome& offspring) 
 
 /*! Place the fragment at the location of best match.
  */
+// RO: HGT tracking and dump - Updated to use hgt_fragment_list_type::iterator
 void cPopulationInterface::HGTMatchPlacement(cAvidaContext& ctx, const InstructionSequence& offspring,
-																						 fragment_list_type::iterator& selected,
-																						 substring_match& location) {
+																					hgt_fragment_list_type::iterator& selected,
+																					substring_match& location) {
 	// find the location within the offspring's genome that best matches the selected fragment:
-	location = cGenomeUtil::FindUnbiasedCircularMatch(ctx, offspring, *selected);
+	location = cGenomeUtil::FindUnbiasedCircularMatch(ctx, offspring, selected->sequence);
 }
-
-
 /*! Place the fragment at the location of best match, with redundant instructions trimmed.
 
  In this fragment selection method, the
@@ -1260,12 +1306,14 @@ void cPopulationInterface::HGTMatchPlacement(cAvidaContext& ctx, const Instructi
  
  Mutations to the offspring are still performed using the entire fragment, so this effectively
  increases the insertion rate.  E.g., hgt(abcde, abcccc) -> abccccde.
+ 
+ RO: HGT tracking and dump - Updated to use hgt_fragment_list_type::iterator
  */
 void cPopulationInterface::HGTTrimmedPlacement(cAvidaContext& ctx, const InstructionSequence& offspring,
-																											 fragment_list_type::iterator& selected,
-																											 substring_match& location) {
+																								hgt_fragment_list_type::iterator& selected,
+																								substring_match& location) {
 	// copy the selected fragment, trimming redundant instructions at the end:
-	InstructionSequence trimmed(*selected);
+	InstructionSequence trimmed(selected->sequence);
 	while((trimmed.GetSize() >= 2) && (trimmed[trimmed.GetSize()-1] == trimmed[trimmed.GetSize()-2])) {
 		trimmed.Remove(trimmed.GetSize()-1);
 	}
@@ -1273,32 +1321,30 @@ void cPopulationInterface::HGTTrimmedPlacement(cAvidaContext& ctx, const Instruc
 	// find the location within the offspring's genome that best matches the selected fragment:
 	location = cGenomeUtil::FindUnbiasedCircularMatch(ctx, offspring, trimmed);
 }
-
-
 /*! Place the fragment at a random location.
  
  Here we select a random location for the fragment within the offspring.
  The beginning of the fragment location is selected at random, while the end is selected a
  random distance (up to the length of the selected fragment * 2) instructions away.
+ 
+ RO: HGT tracking and dump - Updated to use hgt_fragment_list_type::iterator
  */
 void cPopulationInterface::HGTRandomPlacement(cAvidaContext& ctx, const InstructionSequence& offspring,
-																											fragment_list_type::iterator& selected,
-																											substring_match& location) {
+																								hgt_fragment_list_type::iterator& selected,
+																								substring_match& location) {
 	// select a random location within the offspring's genome for this fragment to be
 	// inserted:
 	location.begin = ctx.GetRandom().GetUInt(offspring.GetSize());
-	location.end = location.begin + ctx.GetRandom().GetUInt(selected->GetSize()*2);
+	location.end = location.begin + ctx.GetRandom().GetUInt(selected->sequence.GetSize()*2);
 	location.size = offspring.GetSize();
 	location.resize(offspring.GetSize());
-}
-
-/*! Called when this organism is the receiver of an HGT donation.
+}/*! Called when this organism is the receiver of an HGT donation.
  */
-void cPopulationInterface::ReceiveHGTDonation(const InstructionSequence& fragment) {
+// RO: HGT tracking and dump - Updated to receive HGTFragment with metadata
+void cPopulationInterface::ReceiveHGTDonation(const cGenomeUtil::HGTFragment& fragment) {
 	InitHGTSupport();
 	m_hgt_support->_pending.push_back(fragment);
 }
-
 
 bool cPopulationInterface::Move(cAvidaContext& ctx, int src_id, int dest_id)
 {

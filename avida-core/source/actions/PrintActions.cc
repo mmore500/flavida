@@ -4575,6 +4575,241 @@ public:
   }
 };
 
+// RO: HGT tracking and dump - HGT grid actions for tracking horizontal gene transfer events
+class cActionDumpHgtTransformationFragmentGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHgtTransformationFragmentGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_hgt_transformation_fragment.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        cString fragment_seq("-1");
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true)
+        {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if (organism->GetPhenotype().HasLastHgtTransformation()) {
+            fragment_seq = organism->GetPhenotype().GetLastHgtTransformationFragment().AsString();
+          }
+        }
+        else { fragment_seq = "-1"; }
+        if (fragment_seq == "-") fragment_seq = "-1";
+        fp << fragment_seq << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
+class cActionDumpHgtTransformationDonorGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHgtTransformationDonorGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_hgt_transformation_donor.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int donor_id = -1;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true)
+        {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if(organism->GetPhenotype().HasLastHgtTransformation())
+            donor_id = organism->GetPhenotype().GetLastHgtTransformationDonorId();
+        }
+        fp << donor_id << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
+class cActionDumpHgtTransformationReceiverGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHgtTransformationReceiverGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_hgt_transformation_receiver.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int receiver_id = -1;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true)
+        {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if(organism->GetPhenotype().HasLastHgtTransformation())
+            receiver_id = organism->GetID();
+        }
+        fp << receiver_id << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
+class cActionDumpHgtConjugationFragmentGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHgtConjugationFragmentGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_hgt_conjugation_fragment.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        cString fragment_seq("-1");
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true)
+        {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if (organism->GetPhenotype().HasLastHgtConjugation()) {
+            fragment_seq = organism->GetPhenotype().GetLastHgtConjugationFragment().AsString();
+          }
+        }
+        else { fragment_seq = "-1"; }
+        if (fragment_seq == "-") fragment_seq = "-1";
+        fp << fragment_seq << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
+class cActionDumpHgtConjugationDonorGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHgtConjugationDonorGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_hgt_conjugation_donor.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int donor_id = -1;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true)
+        {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if (organism->GetPhenotype().HasLastHgtConjugation())
+            donor_id = organism->GetPhenotype().GetLastHgtConjugationDonorId();
+        }
+        fp << donor_id << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
+class cActionDumpHgtConjugationReceiverGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpHgtConjugationReceiverGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_hgt_conjugation_receiver.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int receiver_id = -1;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true)
+        {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          if(organism->GetPhenotype().HasLastHgtConjugation())
+            receiver_id = organism->GetID();
+        }
+        fp << receiver_id << " ";
+      }
+      fp << endl;
+    }
+  }
+};
+
 class cActionDumpDonorGrid : public cAction
 {
 private:
@@ -5775,6 +6010,15 @@ void RegisterPrintActions(cActionLibrary* action_lib)
   action_lib->Register<cActionDumpGenomeLengthGrid>("DumpGenomeLengthGrid");
   action_lib->Register<cActionDumpGenotypeGrid>("DumpGenotypeGrid");
   action_lib->Register<cActionDumpParasiteGenotypeGrid>("DumpParasiteGenotypeGrid");
+  
+  // RO: HGT tracking and dump
+  action_lib->Register<cActionDumpHgtTransformationFragmentGrid>("DumpHgtTransformationFragmentGrid");
+  action_lib->Register<cActionDumpHgtTransformationDonorGrid>("DumpHgtTransformationDonorGrid");
+  action_lib->Register<cActionDumpHgtTransformationReceiverGrid>("DumpHgtTransformationReceiverGrid");
+
+  action_lib->Register<cActionDumpHgtConjugationFragmentGrid>("DumpHgtConjugationFragmentGrid");
+  action_lib->Register<cActionDumpHgtConjugationDonorGrid>("DumpHgtConjugationDonorGrid");
+  action_lib->Register<cActionDumpHgtConjugationReceiverGrid>("DumpHgtConjugationReceiverGrid");
   
   //Dump Genotype Lists
   action_lib->Register<cActionDumpHostGenotypeList>("DumpHostGenotypeList");

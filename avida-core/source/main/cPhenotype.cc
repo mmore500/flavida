@@ -550,6 +550,28 @@ void cPhenotype::SetupOffspring(const cPhenotype& parent_phenotype, const Instru
   is_mutated    = false;
   kaboom_executed = false;
   kaboom_executed2 = false;
+  
+  // RO: HGT tracking and dump
+  m_last_t_hgt_donor_id = -1;
+  m_last_t_hgt_fragment = InstructionSequence ('-');
+  m_has_last_t_hgt = false;
+  m_last_c_hgt_donor_id = -1;
+  m_last_c_hgt_fragment = InstructionSequence ('-');
+  m_has_last_c_hgt = false;
+
+  if (m_world->GetConfig().ENABLE_HGT.Get() > 0) {
+    if (parent_phenotype.m_has_offspring_t_hgt) {
+        m_last_t_hgt_donor_id = parent_phenotype.m_offspring_t_hgt_donor_id;
+        m_last_t_hgt_fragment = parent_phenotype.m_offspring_t_hgt_fragment;
+        m_has_last_t_hgt = true;
+    }
+    if (parent_phenotype.m_has_offspring_c_hgt) {
+        m_last_c_hgt_donor_id = parent_phenotype.m_offspring_c_hgt_donor_id;
+        m_last_c_hgt_fragment = parent_phenotype.m_offspring_c_hgt_fragment;
+        m_has_last_c_hgt = true;
+    }
+  }
+  
   if (m_world->GetConfig().INHERIT_MULTITHREAD.Get()) {
     is_multi_thread = parent_phenotype.is_multi_thread;
   } else {
@@ -773,6 +795,7 @@ void cPhenotype::SetupInject(const InstructionSequence& _genome)
   parent_cross_num    = 0;
   make_random_resource = false;
   to_die = false;
+
   to_delete = false;
   kaboom_executed = false;
   kaboom_executed2 = false;
@@ -1065,7 +1088,7 @@ void cPhenotype::DivideReset(const InstructionSequence& _genome)
     m_reaction_result->ResetConsumed();
   } else if(washout == 2) {
     m_reaction_result->ResetLastConsumed();
-  } 
+  }
 }
 
 /**

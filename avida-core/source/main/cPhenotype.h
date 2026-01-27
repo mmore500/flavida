@@ -309,11 +309,31 @@ private:
 
   // 7. Information that is set once (when organism was born)
   double permanent_germline_propensity;
-  
-
+ 
   inline void SetInstSetSize(int inst_set_size);
   inline void SetGroupAttackInstSetSize(int num_group_attack_inst);
+
+  // RO: HGT tracking and dump
+  // Information about the last HGT Transformation fragment acquired by this organism
+  int m_last_t_hgt_donor_id;                       // ID of the donor in the last HGT event
+  InstructionSequence m_last_t_hgt_fragment;       // Sequence of the fragment acquired in the last HGT event
+  bool m_has_last_t_hgt;                           // Flag indicating if this organism has acquired an HGT fragment
+
+  // Information about the last HGT Conjugation fragment acquired by this organism
+  int m_last_c_hgt_donor_id;                       // ID of the donor in the last HGT event
+  InstructionSequence m_last_c_hgt_fragment;       // Sequence of the fragment acquired in the last HGT event
+  bool m_has_last_c_hgt;                           // Flag indicating if this organism has acquired an HGT fragment
+
+  // Information about the HGT Transformation fragment to be transferred to the offspring
+  int m_offspring_t_hgt_donor_id;                  // ID of the HGT donor for the offspring
+  InstructionSequence m_offspring_t_hgt_fragment;  // Sequence of the HGT fragment for the offspring
+  bool m_has_offspring_t_hgt;                      // Flag indicating this orgahism has a HGT fragment for the offspring
   
+  // Information about the HGT Conjugation fragment to be transferred to the offspring
+  int m_offspring_c_hgt_donor_id;                  // ID of the HGT donor for the offspring
+  InstructionSequence m_offspring_c_hgt_fragment;  // Sequence of the HGT fragment for the offspring
+  bool m_has_offspring_c_hgt;                      // Flag indicating this orgahism has a HGT fragment for the offspring
+
 public:
   cPhenotype() : m_world(NULL), m_reaction_result(NULL) { ; } // Will not construct a valid cPhenotype! Only exists to support incorrect cDeme Apto::Array usage.
   cPhenotype(cWorld* world, int parent_generation, int num_nops);
@@ -635,7 +655,6 @@ public:
   void SetKaboomExecuted2(bool value) {kaboom_executed2 = value;} //@AEJ
   void ClearKaboomExecuted() {kaboom_executed = false;} //@AEJ
 
-
   void SetCurRBinsAvail(const Apto::Array<double>& in_avail) { cur_rbins_avail = in_avail; }
   void SetCurRbinsTotal(const Apto::Array<double>& in_total) { cur_rbins_total = in_total; }
   void SetCurRBinAvail(int index, double val) { cur_rbins_avail[index] = val; }
@@ -762,6 +781,63 @@ public:
 
   // RO: Release resources to the global pool before death
   cReactionResult* GetReactionResult() { assert(initialized == true); return m_reaction_result; };
+
+  // RO: HGT tracking and dump
+  int GetLastHgtTransformationDonorId() const { assert(initialized == true); return m_last_t_hgt_donor_id; }
+  const InstructionSequence& GetLastHgtTransformationFragment() const { assert(initialized == true); return m_last_t_hgt_fragment; }
+  bool HasLastHgtTransformation() const { assert(initialized == true); return m_has_last_t_hgt; }
+
+  int GetLastHgtConjugationDonorId() const { assert(initialized == true); return m_last_c_hgt_donor_id; }
+  const InstructionSequence& GetLastHgtConjugationFragment() const { assert(initialized == true); return m_last_c_hgt_fragment; }
+  bool HasLastHgtConjugation() const { assert(initialized == true); return m_has_last_c_hgt; }
+    
+  void SetLastHgtConjugationDonorID(int donor_id) { assert(initialized == true); m_last_c_hgt_donor_id = donor_id; }
+  void SetLastHgtConjugationFragment(const InstructionSequence& fragment) { assert(initialized == true); m_last_c_hgt_fragment = fragment; }
+  void SetHasLastHgtConjugation(bool has_hgt) { assert(initialized == true); m_has_last_c_hgt = has_hgt; }
+  
+  void ClearLastHgtTransformation() { 
+    assert(initialized == true); 
+    m_last_t_hgt_donor_id = -1; 
+    m_last_t_hgt_fragment = InstructionSequence("");
+    m_has_last_t_hgt = false; 
+  }
+
+  void ClearLastHgtConjugation() { 
+    assert(initialized == true); 
+    m_last_c_hgt_donor_id = -1; 
+    m_last_c_hgt_fragment = InstructionSequence("");
+    m_has_last_c_hgt = false; 
+  }
+
+  int GetOffspringHgtTransformationDonorID() const { assert(initialized == true); return m_offspring_t_hgt_donor_id; }
+  const InstructionSequence& GetOffspringHgtTransformationFragment() const { assert(initialized == true); return m_offspring_t_hgt_fragment; }
+  bool HasOffspringHgtTransformation() const { assert(initialized == true); return m_has_offspring_t_hgt; }
+
+  int GetOffspringHgtConjugationDonorID() const { assert(initialized == true); return m_offspring_c_hgt_donor_id; }
+  const InstructionSequence& GetOffspringHgtConjugationFragment() const { assert(initialized == true); return m_offspring_c_hgt_fragment; }
+  bool HasOffspringHgtConjugation() const { assert(initialized == true); return m_has_offspring_c_hgt; }
+
+  void SetOffspringHgtTransformationDonorID(int donor_id) { assert(initialized == true); m_offspring_t_hgt_donor_id = donor_id; }
+  void SetOffspringHgtTransformationFragment(const InstructionSequence& fragment) { assert(initialized == true); m_offspring_t_hgt_fragment = fragment; }
+  void SetHasOffspringHgtTransformation(bool has_hgt) { assert(initialized == true); m_has_offspring_t_hgt = has_hgt; }
+
+  void SetOffspringHgtConjugationDonorID(int donor_id) { assert(initialized == true); m_offspring_c_hgt_donor_id = donor_id; }
+  void SetOffspringHgtConjugationFragment(const InstructionSequence& fragment) { assert(initialized == true); m_offspring_c_hgt_fragment = fragment; }
+  void SetHasOffspringHgtConjugation(bool has_hgt) { assert(initialized == true); m_has_offspring_c_hgt = has_hgt; }
+
+  void ClearOffspringHgtTransformation() { 
+    assert(initialized == true); 
+    m_offspring_t_hgt_donor_id = -1; 
+    m_offspring_t_hgt_fragment = InstructionSequence("");
+    m_has_offspring_t_hgt = false; 
+  }
+
+  void ClearOffspringHgtConjugation() { 
+    assert(initialized == true); 
+    m_offspring_c_hgt_donor_id = -1; 
+    m_offspring_c_hgt_fragment = InstructionSequence("");
+    m_has_offspring_c_hgt = false; 
+  }
 };
 
 

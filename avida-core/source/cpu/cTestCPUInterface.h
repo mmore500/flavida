@@ -182,7 +182,7 @@ public:
 	//! HGT mutation (does nothing).
 	void DoHGTMutation(cAvidaContext&, Genome&) { ; }
 	//! Receive HGT donation (does nothing).
-	void ReceiveHGTDonation(const InstructionSequence&) { ; }
+	void ReceiveHGTDonation(const cGenomeUtil::HGTFragment&) { ; }
   
   bool Move(cAvidaContext&, int, int) { return false; }
 
