@@ -77,7 +77,27 @@ public:
 	static substring_match FindSubstringMatch(const InstructionSequence& base, const InstructionSequence& substring);	
 	//! Find (one of) the best unbiased matches of substring in base, respecting genome circularity.
 	static substring_match FindUnbiasedCircularMatch(cAvidaContext& ctx, const InstructionSequence& base, const InstructionSequence& substring);
-	typedef std::deque<InstructionSequence> fragment_list_type; //!< Type for the list of genome fragments.
+	
+	// RO: HGT tracking and dump
+	//! Fragment structure for tracking HGT data.
+	struct HGTFragment {
+		InstructionSequence sequence;  //!< The genome fragment sequence
+		int donor_id;                  //!< ID of the donor organism (-1 if unknown)
+		char process_type;             //!< Type of HGT process: 'T' (Transformation), 'C' (Conjugation), or '-' (none)
+		
+		//! Default constructor
+		HGTFragment() : donor_id(-1), process_type('-') { }
+		
+		//! Constructor with sequence
+		HGTFragment(const InstructionSequence& seq) : sequence(seq), donor_id(-1), process_type('-') { }
+		
+		//! Constructor with all parameters
+		HGTFragment(const InstructionSequence& seq, int donor, char proc_type) 
+			: sequence(seq), donor_id(donor), process_type(proc_type) { }
+	};
+	
+	typedef std::deque<InstructionSequence> fragment_list_type; //!< Type for the list of genome fragments (legacy).
+	typedef std::deque<HGTFragment> hgt_fragment_list_type; //!< Type for the list of genome fragments with data tracking.
 	//! Split a genome into a list of fragments, each with the given mean size and variance, and add them to the given fragment list.
 	static void RandomSplit(cAvidaContext& ctx, double mean, double variance, const InstructionSequence& genome, fragment_list_type& fragments);
   //! Randomly shuffle the instructions within genome in-place.

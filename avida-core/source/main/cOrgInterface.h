@@ -32,6 +32,7 @@
 #define cOrgInterface_h
 
 #include "avida/systematics/Types.h"
+#include "cGenomeUtil.h"
 
 namespace Avida {
   class Genome;
@@ -163,7 +164,7 @@ public:
   virtual void DoHGTDonation(cAvidaContext& ctx) = 0;
   virtual void DoHGTConjugation(cAvidaContext& ctx) = 0;
   virtual void DoHGTMutation(cAvidaContext& ctx, Genome& offspring) = 0;
-  virtual void ReceiveHGTDonation(const InstructionSequence& fragment) = 0;
+  virtual void ReceiveHGTDonation(const cGenomeUtil::HGTFragment& fragment) = 0;
   
   virtual bool Move(cAvidaContext& ctx, int src_id, int dest_id) = 0;
 
