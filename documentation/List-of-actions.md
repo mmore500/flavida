@@ -70,6 +70,7 @@ actions, along with detailed sections for each them.
 <a href="#DumpLastTaskGrid">DumpLastTaskGrid</a>
 <a href="#DumpMaxResGrid">DumpMaxResGrid</a>
 <a href="#DumpMemory">DumpMemory</a>
+<a href="#DumpOrgTaskGrid">DumpOrgTaskGrid</a>
 <a href="#DumpParasiteGenotypeGrid">DumpParasiteGenotypeGrid</a>
 <a href="#DumpParasiteTaskGrid">DumpParasiteTaskGrid</a>
 <a href="#DumpHostGestationGrid">DumpHostGestationGrid</a>
@@ -966,6 +967,9 @@ organism is doing NOT and EQU and then reported as a base-10 number (257 in the 
 <em>[string fname=""]</em></li>
 	<li><strong><a name="DumpMemory"></a>DumpMemory</strong>
 <em>[string fname=""]</em>Dump memory summary information.</li>
+	<li><strong><a name="DumpOrgTaskGrid"></a>DumpOrgTaskGrid</strong>
+<em>[string fname=""]</em>Print out the grid of takss that organisms did in the last gestation cycle. For each organism, tasks are first encoded as a binary string (e.g. 100000001 means that
+organism is doing NOT and EQU and then reported as a base-10 number (257 in the example above).</li>
 	<li><strong><a name="DumpParasiteGenotypeGrid"></a>DumpParasiteGenotypeGrid</strong>
 <em>[string fname=""]</em></li>
 	<li><strong><a name="DumpParasiteTaskGrid"></a>DumpParasiteTaskGrid</strong>
