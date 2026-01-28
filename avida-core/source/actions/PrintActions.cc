@@ -3968,6 +3968,49 @@ public:
   }
 };
 
+// RO: This is identical to cActionDumpHostTaskGrid, but we use a specific name to clarify its purpose
+class cActionDumpOrgTaskGrid : public cAction
+{
+private:
+  cString m_filename;
+  
+public:
+  cActionDumpOrgTaskGrid(cWorld* world, const cString& args, Feedback&) : cAction(world, args), m_filename("")
+  {
+    cString largs(args);
+    if (largs.GetSize()) m_filename = largs.PopWord();
+  }
+  static const cString GetDescription() { return "Arguments: [string fname='']"; }
+  void Process(cAvidaContext&)
+  {
+    cString filename(m_filename);
+    if (filename == "") filename.Set("grid_task_orgs.%d.dat", m_world->GetStats().GetUpdate());
+    Avida::Output::FilePtr df = Avida::Output::File::CreateWithPath(m_world->GetNewWorld(), (const char*)filename);
+    ofstream& fp = df->OFStream();
+    
+    cPopulation* pop = &m_world->GetPopulation();
+    
+    const int num_tasks = m_world->GetEnvironment().GetNumTasks();
+    
+    for (int j = 0; j < pop->GetWorldY(); j++) {
+      for (int i = 0; i < pop->GetWorldX(); i++) {
+        int task_sum = 0;
+        int cell_num = j * pop->GetWorldX() + i;
+        if (pop->GetCell(cell_num).IsOccupied() == true) {
+          cOrganism* organism = pop->GetCell(cell_num).GetOrganism();
+          cPhenotype& test_phenotype = organism->GetPhenotype();
+          
+          for (int k = 0; k < num_tasks; k++) {
+            if (test_phenotype.GetLastHostTaskCount()[k] > 0) task_sum += static_cast<int>(pow(2.0, k));
+          }
+        }
+        else { task_sum = -1; }
+        fp << task_sum << " ";
+      }
+      fp << endl;
+    }
+  }
+};
 
 //LZ - dump the parasite tasks, ignoring the test cpu and just output what was in the phenotype for the
 //last gestation of the parasite.
@@ -5989,6 +6032,7 @@ void RegisterPrintActions(cActionLibrary* action_lib)
   action_lib->Register<cActionDumpTaskGrid>("DumpTaskGrid");
   action_lib->Register<cActionDumpLastTaskGrid>("DumpLastTaskGrid");
   action_lib->Register<cActionDumpHostTaskGrid>("DumpHostTaskGrid");
+  action_lib->Register<cActionDumpOrgTaskGrid>("DumpOrgTaskGrid");
   action_lib->Register<cActionDumpParasiteTaskGrid>("DumpParasiteTaskGrid");
   action_lib->Register<cActionDumpHostTaskGridComma>("DumpHostTaskGridComma");
   action_lib->Register<cActionDumpParasiteTaskGridComma>("DumpParasiteTaskGridComma");
