@@ -7090,8 +7090,10 @@ bool cHardwareCPU::Inst_HeadDivideMut(cAvidaContext& ctx, double mut_multiplier)
   const int extra_lines = m_memory.GetSize() - child_end;
   bool child_viable = Check_DivisionLengthViability(divide_pos, m_memory.GetSize() - divide_pos - extra_lines);
   bool ret_val = Divide_Main(ctx, divide_pos, extra_lines, mut_multiplier);
-  // RO: Reset input pointer, buffers, stacks, heads, instruction pointer and staks on divide failrues
-  if (m_world->GetConfig().DIVIDE_RESET.Get() && child_viable && !ret_val) {
+  
+  // RO: Reset input pointer, buffers, stacks, heads, instruction pointer, tasks and reactions on divide failrues
+  const int divide_reset = m_world->GetConfig().DIVIDE_RESET.Get();
+  if (divide_reset > 0 && child_viable && !ret_val) {
     // Reset input pointer and input buffer
     m_organism->ResetInput();
 
@@ -7126,9 +7128,14 @@ bool cHardwareCPU::Inst_HeadDivideMut(cAvidaContext& ctx, double mut_multiplier)
 
     m_advance_ip = false;
 
-    // Reset task countS
-    m_organism->GetPhenotype().ClearCurTaskCount();
-    m_organism->GetPhenotype().ClearEffTaskCount();
+    if (divide_reset == 2) {
+      // Reset task countS
+      m_organism->GetPhenotype().ClearCurTaskCount();
+      m_organism->GetPhenotype().ClearEffTaskCount();
+
+      // Reset reactions
+      m_organism->GetPhenotype().ClearCurReactionCount();
+    }
 
     return false;
   }

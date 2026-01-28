@@ -2327,9 +2327,13 @@ void cHardwareTransSMT::Full_DivideReset(cAvidaContext &ctx) {
     // Block IP advance
     AdvanceIP() = false;
 
-    // Reset task countS
-    m_organism->GetPhenotype().ClearCurTaskCount();
-    m_organism->GetPhenotype().ClearEffTaskCount();
+    if (m_world->GetConfig().DIVIDE_HOST_RESET.Get() == 2 || m_world->GetConfig().INJECT_RESET.Get() == 2) {
+      // Reset task countS
+      m_organism->GetPhenotype().ClearCurTaskCount();
+      m_organism->GetPhenotype().ClearEffTaskCount();
+      // Reset reaction counts
+      m_organism->GetPhenotype().ClearCurReactionCount();
+    }
 }
 
 void cHardwareTransSMT::Partial_DivideReset(cAvidaContext &ctx) {
