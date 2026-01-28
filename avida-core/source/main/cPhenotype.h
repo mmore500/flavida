@@ -795,6 +795,10 @@ public:
   void SetLastHgtConjugationFragment(const InstructionSequence& fragment) { assert(initialized == true); m_last_c_hgt_fragment = fragment; }
   void SetHasLastHgtConjugation(bool has_hgt) { assert(initialized == true); m_has_last_c_hgt = has_hgt; }
   
+  // RO: Reset input pointer, buffers, stacks, heads, instruction pointer, tasks and reactions on divide failrues
+  void ClearLastReactionCount() { assert(initialized == true); last_reaction_count.SetAll(0); }
+  void ClearCurReactionCount() { assert(initialized == true); cur_reaction_count.SetAll(0); }
+
   void ClearLastHgtTransformation() { 
     assert(initialized == true); 
     m_last_t_hgt_donor_id = -1; 
