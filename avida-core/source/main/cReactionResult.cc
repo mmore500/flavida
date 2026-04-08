@@ -39,6 +39,12 @@ cReactionResult::cReactionResult(const int num_resources,
   , reaction_add_bonus(num_reactions)
   , active_reaction(false)
 {
+  resources_consumed.SetAll(0.0);
+  last_resources_consumed.SetAll(0.0);
+  resources_produced.SetAll(0.0);
+  resources_detected.SetAll(-1.0);
+  internal_resources_consumed.SetAll(0.0);
+  internal_resources_produced.SetAll(0.0);
 }
 
 void cReactionResult::ActivateReaction()
