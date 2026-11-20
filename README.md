@@ -75,6 +75,18 @@ Building Avida on Windows:
   generally 'Debug', 'Release' is recommended).  Build the 'All Build' target.
 
 
+Running Avida with Docker:
+
+  A prebuilt image is published to the GitHub Container Registry on every push
+  to master.  The image's entrypoint is the avida executable, run from the
+  default 'work' directory.
+  $ docker pull ghcr.io/mmore500/flavida:latest
+  $ docker run --rm ghcr.io/mmore500/flavida:latest -version
+
+  To build the image locally instead:
+  $ docker build -t flavida .
+
+
 III. CMAKE CONFIGURATION OPTIONS
 --------------------------------------------------------------------------------
 
